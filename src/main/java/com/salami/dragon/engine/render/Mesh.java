@@ -16,13 +16,13 @@ import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 
 public class Mesh {
     private final VAO vao;
-    private final VBO vbo;
+    private final VBO vbo, colourVbo;
     private final EAO eao;
     private final int vertexCount;
-    FloatBuffer vertexBuffer;
+    FloatBuffer vertexBuffer, colourBuffer;
     IntBuffer indexBuffer;
 
-    public Mesh(float[] vertices, int[] indices) {
+    public Mesh(float[] vertices, float[] colours, int[] indices) {
         vertexCount = indices.length;
 
         vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
@@ -31,15 +31,23 @@ public class Mesh {
         indexBuffer = BufferUtils.createIntBuffer(indices.length);
         indexBuffer.put(indices).flip();
 
-        vao = new VAO();
-        vbo = new VBO();
+        colourBuffer = BufferUtils.createFloatBuffer(colours.length);
+        colourBuffer.put(colours).flip();
 
+        vao = new VAO();
+
+        vbo = new VBO();
         glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
         eao = new EAO();
-
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+
+        colourVbo = new VBO();
+        glBufferData(GL_ARRAY_BUFFER, colourBuffer, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 

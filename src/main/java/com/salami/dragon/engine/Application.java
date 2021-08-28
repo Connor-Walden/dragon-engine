@@ -1,9 +1,10 @@
 package com.salami.dragon.engine;
 
+import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
-import com.salami.dragon.engine.render.Mesh;
 import com.salami.dragon.engine.window.Window;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,9 +16,13 @@ public class Application {
 
     private static Application instance;
 
+    private List<Entity> entities;
+
     private Application(IApplication app) throws Exception {
         this.app = app;
         this.eventGovernor = new EventGovernor(null);
+
+        this.entities = new ArrayList<>();
         instance = this;
 
         window = new Window(
@@ -52,7 +57,8 @@ public class Application {
         }
     }
 
-    public static void registerMesh(Mesh mesh) {
+    public static void registerEntity(Entity entity) {
+        instance.entities.add(entity);
     }
 
     public void start() throws Exception {
@@ -95,6 +101,16 @@ public class Application {
         }
 
         stop();
+    }
+
+    public Entity[] getEntities() {
+        Entity[] entitiesArray = new Entity[entities.size()];
+
+        for(int i = 0; i < entities.size(); i++) {
+            entitiesArray[i] = entities.get(i);
+        }
+
+        return entitiesArray;
     }
 
     public EventGovernor getEventGovernor() {

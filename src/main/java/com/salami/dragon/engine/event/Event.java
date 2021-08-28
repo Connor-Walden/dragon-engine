@@ -14,8 +14,9 @@ public class Event {
         listeners = new ArrayList<IListener>();
     }
 
-    public void fireEvent() {
-        if(eventType == EventType.APPLICATION_INIT || eventType == EventType.APPLICATION_START || eventType == EventType.APPLICATION_STOP || eventType == EventType.APPLICATION_TICK) {
+    public void fireEngineEvent() {
+        if(eventType == EventType.APPLICATION_INIT || eventType == EventType.APPLICATION_START || eventType == EventType.APPLICATION_STOP || eventType == EventType.APPLICATION_TICK ||
+            eventType == EventType.WINDOW_OPEN || eventType == EventType.WINDOW_CLOSE || eventType == EventType.WINDOW_FOCUS || eventType == EventType.WINDOW_LOST_FOCUS || eventType == EventType.WINDOW_RESIZE || eventType == EventType.WINDOW_MAXIMIZE || eventType == EventType.WINDOW_UN_MAXIMIZE || eventType == EventType.WINDOW_MOVE) {
             for(IListener listener : listeners) {
                 listener.onEngineEvent(this);
             }

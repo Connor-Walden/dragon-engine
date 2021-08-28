@@ -17,7 +17,7 @@ public class EventGovernor {
     public void fireEvent(EventType name) {
         Event eventToFire = eventMap.get(name);
 
-        eventToFire.fireEvent();
+        eventToFire.fireEngineEvent();
     }
 
     public void fireEvent(EventType name, int key) {

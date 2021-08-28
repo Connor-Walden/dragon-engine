@@ -1,6 +1,11 @@
 package com.salami.dragon.engine.render;
 
+import com.salami.dragon.engine.camera.Camera;
+import com.salami.dragon.engine.ecs.entity.Entity;
+import com.salami.dragon.engine.ecs.entity.Transformation;
 import com.salami.dragon.engine.render.shader.ShaderProgram;
+import com.salami.dragon.engine.window.Window;
+import org.joml.Matrix4f;
 
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
@@ -10,20 +15,21 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class GraphicsContext {
 
-    long window;
+    Window window;
 
     ShaderProgram shaderProgram;
-    Mesh mesh;
+    Camera camera;
+    Transformation transformation;
 
-    public GraphicsContext(long window) {
+    public GraphicsContext(Window window) {
         this.window = window;
     }
 
     public void init() {
-        glfwMakeContextCurrent(window);
+        glfwMakeContextCurrent(window.getGLFWWindow());
     }
 
-    public void prepare(Mesh mesh) throws Exception {
+    public void prepare() throws Exception {
         shaderProgram = new ShaderProgram();
 
         shaderProgram.link(
@@ -31,31 +37,55 @@ public class GraphicsContext {
                 "C:\\Users\\conno\\OneDrive\\Desktop\\dragon-engine\\src\\main\\java\\com\\salami\\dragon\\engine\\render\\shader\\fragment.glsl"
         );
 
-        this.mesh = mesh;
+        camera = new Camera(window);
+        transformation = new Transformation();
+
+        shaderProgram.createUniform("projectionMatrix");
+        shaderProgram.createUniform("worldMatrix");
     }
 
-    public void render() {
+    public void render(Entity[] entities) {
         shaderProgram.bind();
-        glBindVertexArray(mesh.getVAO().getVAOID());
-        glEnableVertexAttribArray(0);
+        for(Entity entity : entities) {
+            glBindVertexArray(entity.getMesh().getVAO().getVAOID());
 
-        glDrawElements(GL_TRIANGLES, mesh.getVertexCount(), GL_UNSIGNED_INT, 0);
+            glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
 
-        glDisableVertexAttribArray(0);
-        glBindVertexArray(0);
+            Matrix4f projectionMatrix = transformation.getProjectionMatrix(Camera.FOV, window.getWidth(), window.getHeight(), Camera.Z_NEAR, Camera.Z_FAR);
+            shaderProgram.setUniform("projectionMatrix", projectionMatrix);
+
+            Matrix4f worldMatrix = transformation.getWorldMatrix(
+                entity.getPosition(),
+                entity.getRotation(),
+                entity.getScale()
+            );
+
+            shaderProgram.setUniform("worldMatrix", worldMatrix);
+
+            glDrawElements(GL_TRIANGLES, entity.getMesh().getVertexCount(), GL_UNSIGNED_INT, 0);
+
+            glDisableVertexAttribArray(0);
+            glDisableVertexAttribArray(1);
+
+            glBindVertexArray(0);
+        }
+
         shaderProgram.unbind();
     }
 
-    public void cleanUp() {
+    public void cleanUp(Entity[] entities) {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
         }
 
-        mesh.cleanUp();
+        for (Entity entity : entities) {
+            entity.getMesh().cleanUp();
+        }
     }
 
-    public void swapBuffers(long window) {
-        render();
+    public void swapBuffers(long window, Entity[] entities) {
+        render(entities);
         glfwSwapBuffers(window);
     }
 }

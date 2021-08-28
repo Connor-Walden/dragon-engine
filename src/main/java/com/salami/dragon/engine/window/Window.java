@@ -4,6 +4,7 @@ import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.event.EventType;
 import com.salami.dragon.engine.input.Input;
+import com.salami.dragon.engine.log.Logger;
 import com.salami.dragon.engine.render.GraphicsContext;
 import com.salami.dragon.engine.render.Mesh;
 import org.lwjgl.glfw.*;
@@ -41,8 +42,8 @@ public class Window {
         eventMap.put(EventType.WINDOW_MOVE, new Event(EventType.WINDOW_MOVE));
         eventMap.put(EventType.WINDOW_FOCUS, new Event(EventType.WINDOW_FOCUS));
         eventMap.put(EventType.WINDOW_LOST_FOCUS, new Event(EventType.WINDOW_LOST_FOCUS));
-        eventMap.put(EventType.WINDOW_MAXIMIZED, new Event(EventType.WINDOW_MAXIMIZED));
-        eventMap.put(EventType.WINDOW_UN_MAXIMIZED, new Event(EventType.WINDOW_UN_MAXIMIZED));
+        eventMap.put(EventType.WINDOW_MAXIMIZE, new Event(EventType.WINDOW_MAXIMIZE));
+        eventMap.put(EventType.WINDOW_UN_MAXIMIZE, new Event(EventType.WINDOW_UN_MAXIMIZE));
 
         this.app.getEventGovernor().registerEvents(eventMap);
     }
@@ -76,7 +77,7 @@ public class Window {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-        context = new GraphicsContext(window);
+        context = new GraphicsContext(this);
         context.init();
 
         GL.createCapabilities();
@@ -84,32 +85,21 @@ public class Window {
 
         setupGLFWCallbacks();
 
-        float[] vertices = new float[]{
-                -0.5f, 0.5f, 0.0f,
-                -0.5f, -0.5f, 0.0f,
-                0.5f, -0.5f, 0.0f,
-                0.5f, 0.5f, 0.0f,
-        };
-
-        int[] indices = new int[]{
-                0, 1, 3, 3, 1, 2,
-        };
-
-        Mesh mesh = new Mesh(vertices, indices);
-
-        context.prepare(mesh);
+        context.prepare();
     }
 
     private void setupGLFWCallbacks() {
         // Callbacks for window events
         glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback(){
             @Override public void invoke(long window, int _width, int _height){
+                Logger.log_warning("New Window Size: " + _width + ", " + _height);
+
                 if(prevWidth != _width || prevHeight != _height) {
                     glViewport(0, 0, _width, _height);
 
                     app.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
 
-                    context.swapBuffers(window);
+                    context.swapBuffers(window, app.getEntities());
                 }
 
                 prevWidth = _width;
@@ -143,9 +133,9 @@ public class Window {
             @Override
             public void invoke(long window, boolean maximized) {
                 if(maximized) {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZED);
+                    app.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE);
                 } else {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZED);
+                    app.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE);
                 }
             }
         });
@@ -245,7 +235,7 @@ public class Window {
     }
 
     public void terminate() {
-        context.cleanUp();
+        context.cleanUp(app.getEntities());
 
         glfwDestroyWindow(window);
 
@@ -258,7 +248,7 @@ public class Window {
         // Poll the events and swap the buffers
         glfwPollEvents();
 
-        context.swapBuffers(window);
+        context.swapBuffers(window, app.getEntities());
     }
 
     public boolean RUNNING() {
@@ -271,5 +261,17 @@ public class Window {
 
     public GraphicsContext getContext() {
         return context;
+    }
+
+    public long getGLFWWindow() {
+        return window;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

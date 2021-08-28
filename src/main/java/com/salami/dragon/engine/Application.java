@@ -1,7 +1,7 @@
 package com.salami.dragon.engine;
 
 import com.salami.dragon.engine.event.*;
-import com.salami.dragon.engine.log.Logger;
+import com.salami.dragon.engine.render.Mesh;
 import com.salami.dragon.engine.window.Window;
 
 import java.util.HashMap;
@@ -15,7 +15,7 @@ public class Application {
 
     private static Application instance;
 
-    private Application(IApplication app) {
+    private Application(IApplication app) throws Exception {
         this.app = app;
         this.eventGovernor = new EventGovernor(null);
         instance = this;
@@ -42,7 +42,7 @@ public class Application {
         this.eventGovernor.registerEvents(eventMap);
     }
 
-    public static void registerApp(IApplication app) {
+    public static void registerApp(IApplication app) throws Exception {
         instance = new Application(app);
     }
 
@@ -52,7 +52,10 @@ public class Application {
         }
     }
 
-    public void start() {
+    public static void registerMesh(Mesh mesh) {
+    }
+
+    public void start() throws Exception {
         this.eventGovernor.fireEvent(EventType.APPLICATION_START);
 
         // Follow application flow by initialising and going into tick()
@@ -67,7 +70,7 @@ public class Application {
         this.eventGovernor.fireEvent(EventType.APPLICATION_STOP);
     }
 
-    public void init() {
+    public void init() throws Exception {
         window.init();
         app.init();
 
@@ -97,4 +100,5 @@ public class Application {
     public EventGovernor getEventGovernor() {
         return eventGovernor;
     }
+    public Window getWindow() { return window; }
 }

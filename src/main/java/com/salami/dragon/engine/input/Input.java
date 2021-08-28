@@ -90,9 +90,12 @@ public class Input {
     }
 
     public static void onMouseButtonRelease(int button) {
-        mouseButtonsHeld.remove(mouseButtonsHeld.indexOf(button));
 
-        app.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_RELEASE, button);
+        if(mouseButtonsHeld.contains(button)) {
+            mouseButtonsHeld.remove(mouseButtonsHeld.indexOf(button));
+
+            app.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_RELEASE, button);
+        }
     }
 
     public static void onMouseScroll(double amount) {

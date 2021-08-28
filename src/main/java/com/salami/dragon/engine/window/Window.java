@@ -3,8 +3,9 @@ package com.salami.dragon.engine.window;
 import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.event.EventType;
-import com.salami.dragon.engine.event.IListener;
 import com.salami.dragon.engine.input.Input;
+import com.salami.dragon.engine.render.GraphicsContext;
+import com.salami.dragon.engine.render.Mesh;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
@@ -17,8 +18,10 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public class Window {
     private long window;
+    private GraphicsContext context;
 
-    private int width, height;
+    private final int width;
+    private final int height;
     private final String title;
     private final Application app;
 
@@ -44,7 +47,7 @@ public class Window {
         this.app.getEventGovernor().registerEvents(eventMap);
     }
 
-    public void init() {
+    public void init() throws Exception {
         Input.init(app);
 
         GLFWErrorCallback.createPrint(System.err).set();
@@ -56,7 +59,6 @@ public class Window {
         }
 
         window = glfwCreateWindow(width, height, title, NULL, NULL);
-
         this.app.getEventGovernor().fireEvent(EventType.WINDOW_OPEN);
 
         centreWindow();
@@ -74,28 +76,44 @@ public class Window {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-        glfwMakeContextCurrent(window);
+        context = new GraphicsContext(window);
+        context.init();
+
         GL.createCapabilities();
         glfwSwapInterval(1);
 
         setupGLFWCallbacks();
+
+        float[] vertices = new float[]{
+                -0.5f, 0.5f, 0.0f,
+                -0.5f, -0.5f, 0.0f,
+                0.5f, -0.5f, 0.0f,
+                0.5f, 0.5f, 0.0f,
+        };
+
+        int[] indices = new int[]{
+                0, 1, 3, 3, 1, 2,
+        };
+
+        Mesh mesh = new Mesh(vertices, indices);
+
+        context.prepare(mesh);
     }
 
     private void setupGLFWCallbacks() {
         // Callbacks for window events
         glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback(){
             @Override public void invoke(long window, int _width, int _height){
-                width = _width;
-                height = _height;
-
-                if(prevWidth != width || prevHeight != height) {
-                    glViewport(0, 0, width, height);
+                if(prevWidth != _width || prevHeight != _height) {
+                    glViewport(0, 0, _width, _height);
 
                     app.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
+
+                    context.swapBuffers(window);
                 }
 
-                prevWidth = width;
-                prevHeight = height;
+                prevWidth = _width;
+                prevHeight = _height;
             }
         });
 
@@ -227,6 +245,8 @@ public class Window {
     }
 
     public void terminate() {
+        context.cleanUp();
+
         glfwDestroyWindow(window);
 
         this.app.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE);
@@ -236,7 +256,9 @@ public class Window {
 
     public void tick(float delta) {
         // Poll the events and swap the buffers
-        glfwPollEvents();        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        context.swapBuffers(window);
     }
 
     public boolean RUNNING() {
@@ -245,5 +267,9 @@ public class Window {
 
     public double getTime() {
         return glfwGetTime();
+    }
+
+    public GraphicsContext getContext() {
+        return context;
     }
 }

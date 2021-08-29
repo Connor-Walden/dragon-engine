@@ -14,6 +14,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Texture {
     PNGDecoder decoder;
     int textureId;
+    int width, height;
 
     public Texture(String fileName) throws IOException {
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
@@ -26,6 +27,9 @@ public class Texture {
 
     public void loadToGL() throws IOException {
         ByteBuffer buf = ByteBuffer.allocateDirect(4 * decoder.getWidth() * decoder.getHeight());
+
+        width = decoder.getWidth();
+        height = decoder.getHeight();
 
         decoder.decode(buf, decoder.getWidth() * 4, PNGDecoder.Format.RGBA);
 
@@ -52,5 +56,13 @@ public class Texture {
 
     public void cleanup() {
         glDeleteTextures(textureId);
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

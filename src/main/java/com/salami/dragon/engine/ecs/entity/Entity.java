@@ -4,7 +4,7 @@ import com.salami.dragon.engine.render.Mesh;
 import org.joml.Vector3f;
 
 public class Entity {
-    private final Mesh mesh;
+    private Mesh mesh;
 
     private final Vector3f position;
 
@@ -12,11 +12,15 @@ public class Entity {
 
     private final Vector3f rotation;
 
-    public Entity(Mesh mesh) {
-        this.mesh = mesh;
+    public Entity() {
         position = new Vector3f();
         scale = 1;
         rotation = new Vector3f();
+    }
+
+    public Entity(Mesh mesh) {
+        this();
+        this.mesh = mesh;
     }
 
     public Vector3f getPosition() {
@@ -49,5 +53,9 @@ public class Entity {
 
     public Mesh getMesh() {
         return mesh;
+    }
+
+    public void setMesh(Mesh mesh) {
+        this.mesh = mesh;
     }
 }

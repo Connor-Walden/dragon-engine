@@ -45,9 +45,23 @@ public class Input {
     public static final int KEY_X = GLFW_KEY_X;
     public static final int KEY_Y = GLFW_KEY_Y;
     public static final int KEY_Z = GLFW_KEY_Z;
+
     public static final int KEY_SPACE = GLFW_KEY_SPACE;
     public static final int KEY_LSHIFT = GLFW_KEY_LEFT_SHIFT;
     public static final int KEY_ESCAPE = GLFW_KEY_ESCAPE;
+
+    public static final int KEY_F1 = GLFW_KEY_F1;
+    public static final int KEY_F2 = GLFW_KEY_F2;
+    public static final int KEY_F3 = GLFW_KEY_F3;
+    public static final int KEY_F4 = GLFW_KEY_F4;
+    public static final int KEY_F5 = GLFW_KEY_F5;
+    public static final int KEY_F6 = GLFW_KEY_F6;
+    public static final int KEY_F7 = GLFW_KEY_F7;
+    public static final int KEY_F8 = GLFW_KEY_F8;
+    public static final int KEY_F9 = GLFW_KEY_F9;
+    public static final int KEY_F10 = GLFW_KEY_F10;
+    public static final int KEY_F11 = GLFW_KEY_F11;
+    public static final int KEY_F12 = GLFW_KEY_F12;
 
     public static void init(Application _app) {
         keysHeld = new ArrayList<>();

@@ -1,12 +1,11 @@
 package com.salami.dragon.engine.window;
 
 import com.salami.dragon.engine.Application;
+import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.event.EventType;
 import com.salami.dragon.engine.input.Input;
-import com.salami.dragon.engine.log.Logger;
 import com.salami.dragon.engine.render.GraphicsContext;
-import com.salami.dragon.engine.render.Mesh;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
@@ -21,6 +20,9 @@ public class Window {
     private long window;
     private GraphicsContext context;
 
+    private static Window instance;
+    private Camera camera;
+
     private final int width;
     private final int height;
     private final String title;
@@ -28,11 +30,13 @@ public class Window {
 
     private int prevXPos, prevYPos, prevWidth, prevHeight;
 
-    public Window(Application app, int width, int height, String title) {
+    public Window(Application app, int width, int height, String title, Camera camera) {
+        instance = this;
         this.width = width;
         this.height = height;
         this.title = title;
         this.app = app; // Needed for events.
+        this.camera = camera;
 
         // Events
         Map<EventType, Event> eventMap = new HashMap<>();
@@ -82,6 +86,7 @@ public class Window {
 
         GL.createCapabilities();
         glfwSwapInterval(1);
+        glEnable(GL_DEPTH_TEST);
 
         setupGLFWCallbacks();
 
@@ -92,14 +97,12 @@ public class Window {
         // Callbacks for window events
         glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback(){
             @Override public void invoke(long window, int _width, int _height){
-                Logger.log_warning("New Window Size: " + _width + ", " + _height);
-
                 if(prevWidth != _width || prevHeight != _height) {
                     glViewport(0, 0, _width, _height);
 
                     app.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
 
-                    context.swapBuffers(window, app.getEntities());
+                    context.swapBuffers(camera, app.getEntities());
                 }
 
                 prevWidth = _width;
@@ -113,8 +116,8 @@ public class Window {
                     app.getEventGovernor().fireEvent(EventType.WINDOW_MOVE);
                 }
 
-                prevWidth = xpos;
-                prevHeight = ypos;
+                prevXPos = xpos;
+                prevYPos = ypos;
             }
         });
 
@@ -235,7 +238,7 @@ public class Window {
     }
 
     public void terminate() {
-        context.cleanUp(app.getEntities());
+        context.cleanUp();
 
         glfwDestroyWindow(window);
 
@@ -248,11 +251,19 @@ public class Window {
         // Poll the events and swap the buffers
         glfwPollEvents();
 
-        context.swapBuffers(window, app.getEntities());
+        context.swapBuffers(camera, app.getEntities());
     }
 
     public boolean RUNNING() {
-        return !glfwWindowShouldClose(window);
+        if(window != NULL && !glfwWindowShouldClose(window))
+            return true;
+
+        terminate();
+        return false;
+    }
+
+    public void invalidateWindow() {
+        window = NULL;
     }
 
     public double getTime() {

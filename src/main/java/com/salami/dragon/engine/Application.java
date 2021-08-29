@@ -1,5 +1,6 @@
 package com.salami.dragon.engine;
 
+import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.window.Window;
@@ -8,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.lwjgl.glfw.GLFW.*;
 
 public class Application {
     private final IApplication app;
@@ -29,7 +32,8 @@ public class Application {
             this,
             app.WIDTH(),
             app.HEIGHT(),
-            app.TITLE()
+            app.TITLE(),
+            app.CAMERA()
         );
 
         setupEvents();
@@ -69,11 +73,11 @@ public class Application {
         tick();
     }
 
-    public void stop() {
+    public static void stop() {
         // Destroy the window
-        window.terminate();
+        instance.getWindow().invalidateWindow();
 
-        this.eventGovernor.fireEvent(EventType.APPLICATION_STOP);
+        instance.getEventGovernor().fireEvent(EventType.APPLICATION_STOP);
     }
 
     public void init() throws Exception {
@@ -111,6 +115,24 @@ public class Application {
         }
 
         return entitiesArray;
+    }
+
+    public static void setCursorCaptured(boolean captured) {
+        if(captured) {
+            glfwSetInputMode(instance.getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            setCursor(0, 0);
+        } else {
+            glfwSetInputMode(instance.getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            centreCursor();
+        }
+    }
+
+    public static void centreCursor() {
+        glfwSetCursorPos(instance.getWindow().getGLFWWindow(), instance.getWindow().getWidth() / 2f, instance.getWindow().getHeight() / 2f);
+    }
+
+    public static void setCursor(float xPos, float yPos) {
+        glfwSetCursorPos(instance.getWindow().getGLFWWindow(), xPos, yPos);
     }
 
     public EventGovernor getEventGovernor() {

@@ -1,5 +1,6 @@
 package com.salami.dragon.engine.render;
 
+import com.salami.dragon.engine.Utils;
 import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.ecs.entity.Transformation;
@@ -10,15 +11,19 @@ import org.joml.Matrix4f;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GraphicsContext {
+
+    private static final float FOV = (float) Math.toRadians(60.0f);
+
+    private static final float Z_NEAR = 0.01f;
+
+    private static final float Z_FAR = 1000.f;
 
     Window window;
 
     ShaderProgram shaderProgram;
-    Camera camera;
     Transformation transformation;
 
     public GraphicsContext(Window window) {
@@ -30,62 +35,59 @@ public class GraphicsContext {
     }
 
     public void prepare() throws Exception {
+        // Create shader
         shaderProgram = new ShaderProgram();
+        shaderProgram.createVertexShader(Utils.loadResource("/shaders/vertex.glsl"));
+        shaderProgram.createFragmentShader(Utils.loadResource("/shaders/fragment.glsl"));
+        shaderProgram.link();
 
-        shaderProgram.link(
-                "C:\\Users\\conno\\OneDrive\\Desktop\\dragon-engine\\src\\main\\java\\com\\salami\\dragon\\engine\\render\\shader\\vertex.glsl",
-                "C:\\Users\\conno\\OneDrive\\Desktop\\dragon-engine\\src\\main\\java\\com\\salami\\dragon\\engine\\render\\shader\\fragment.glsl"
-        );
-
-        camera = new Camera(window);
         transformation = new Transformation();
 
+        // Create uniforms for modelView and projection matrices and texture
         shaderProgram.createUniform("projectionMatrix");
-        shaderProgram.createUniform("worldMatrix");
+        shaderProgram.createUniform("modelViewMatrix");
+        shaderProgram.createUniform("texture_sampler");
     }
 
-    public void render(Entity[] entities) {
+    public void clear() {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    public void render(Window window, Camera camera, Entity[] entities) {
+        clear();
+
         shaderProgram.bind();
-        for(Entity entity : entities) {
-            glBindVertexArray(entity.getMesh().getVAO().getVAOID());
 
-            glEnableVertexAttribArray(0);
-            glEnableVertexAttribArray(1);
+        // Update projection Matrix
+        Matrix4f projectionMatrix = transformation.getProjectionMatrix(FOV, window.getWidth(), window.getHeight(), Z_NEAR, Z_FAR);
+        shaderProgram.setUniform("projectionMatrix", projectionMatrix);
 
-            Matrix4f projectionMatrix = transformation.getProjectionMatrix(Camera.FOV, window.getWidth(), window.getHeight(), Camera.Z_NEAR, Camera.Z_FAR);
-            shaderProgram.setUniform("projectionMatrix", projectionMatrix);
+        // Update view Matrix
+        Matrix4f viewMatrix = transformation.getViewMatrix(camera);
 
-            Matrix4f worldMatrix = transformation.getWorldMatrix(
-                entity.getPosition(),
-                entity.getRotation(),
-                entity.getScale()
-            );
-
-            shaderProgram.setUniform("worldMatrix", worldMatrix);
-
-            glDrawElements(GL_TRIANGLES, entity.getMesh().getVertexCount(), GL_UNSIGNED_INT, 0);
-
-            glDisableVertexAttribArray(0);
-            glDisableVertexAttribArray(1);
-
-            glBindVertexArray(0);
+        shaderProgram.setUniform("texture_sampler", 0);
+        // Render each gameItem
+        for (Entity entity : entities) {
+            // Set model view matrix for this item
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(entity, viewMatrix);
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            // Render the mes for this game item
+            entity.getMesh().render();
         }
 
         shaderProgram.unbind();
     }
 
-    public void cleanUp(Entity[] entities) {
+    public void cleanUp() {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
         }
-
-        for (Entity entity : entities) {
-            entity.getMesh().cleanUp();
-        }
     }
 
-    public void swapBuffers(long window, Entity[] entities) {
-        render(entities);
-        glfwSwapBuffers(window);
+    public void swapBuffers(Camera camera, Entity[] entities) {
+        render(window, camera, entities);
+
+        if(window.getGLFWWindow() != NULL)
+            glfwSwapBuffers(window.getGLFWWindow());
     }
 }

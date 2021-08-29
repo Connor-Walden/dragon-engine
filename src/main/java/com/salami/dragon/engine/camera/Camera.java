@@ -1,62 +1,57 @@
 package com.salami.dragon.engine.camera;
 
-import com.salami.dragon.engine.Application;
-import com.salami.dragon.engine.ecs.entity.Transformation;
-import com.salami.dragon.engine.event.Event;
-import com.salami.dragon.engine.event.EventType;
-import com.salami.dragon.engine.event.IListener;
-import com.salami.dragon.engine.log.Logger;
-import com.salami.dragon.engine.window.Window;
-import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Camera {
+    private final Vector3f position;
 
-public class Camera implements IListener {
-    public static final float FOV = (float) Math.toRadians(90.0f);
-    public static final float Z_NEAR = 0.01f;
-    public static final float Z_FAR = 1000.f;
+    private final Vector3f rotation;
 
-    private Matrix4f projectionMatrix;
-
-    private Window window;
-
-    public Camera(Window window) {
-        this.window = window;
-
-        List<EventType> eventsToListenTo = new ArrayList<EventType>();
-        eventsToListenTo.add(EventType.WINDOW_RESIZE);
-
-        Application.registerListener(eventsToListenTo, this);
-
-        recalculateProjectionMatrix();
+    public Camera() {
+        position = new Vector3f();
+        rotation = new Vector3f();
     }
 
-    public void recalculateProjectionMatrix() {
-        projectionMatrix = new Transformation().getProjectionMatrix(FOV, window.getWidth(), window.getHeight(), Z_NEAR, Z_FAR);
+    public Camera(Vector3f position, Vector3f rotation) {
+        this.position = position;
+        this.rotation = rotation;
     }
 
-    public Matrix4f getProjectionMatrix() {
-        return projectionMatrix;
+    public Vector3f getPosition() {
+        return position;
     }
 
-    @Override
-    public void onEngineEvent(Event event) {
-        recalculateProjectionMatrix();
+    public void setPosition(float x, float y, float z) {
+        position.x = x;
+        position.y = y;
+        position.z = z;
     }
 
-    @Override
-    public void onKeyOrMouseButtonEvent(Event event, int key) {
-
+    public void movePosition(float offsetX, float offsetY, float offsetZ) {
+        if ( offsetZ != 0 ) {
+            position.x += (float)Math.sin(Math.toRadians(rotation.y)) * -1.0f * offsetZ;
+            position.z += (float)Math.cos(Math.toRadians(rotation.y)) * offsetZ;
+        }
+        if ( offsetX != 0) {
+            position.x += (float)Math.sin(Math.toRadians(rotation.y - 90)) * -1.0f * offsetX;
+            position.z += (float)Math.cos(Math.toRadians(rotation.y - 90)) * offsetX;
+        }
+        position.y += offsetY;
     }
 
-    @Override
-    public void onMouseMoveEvent(Event event, double xPos, double yPos) {
-
+    public Vector3f getRotation() {
+        return rotation;
     }
 
-    @Override
-    public void onMouseScrollEvent(Event event, double amount) {
+    public void setRotation(float x, float y, float z) {
+        rotation.x = x;
+        rotation.y = y;
+        rotation.z = z;
+    }
 
+    public void moveRotation(float offsetX, float offsetY, float offsetZ) {
+        rotation.x += offsetX;
+        rotation.y += offsetY;
+        rotation.z += offsetZ;
     }
 }

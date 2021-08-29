@@ -3,7 +3,6 @@ package com.salami.dragon.engine.input;
 import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.event.EventType;
-import com.salami.dragon.engine.event.IListener;
 
 import java.util.*;
 
@@ -46,6 +45,9 @@ public class Input {
     public static final int KEY_X = GLFW_KEY_X;
     public static final int KEY_Y = GLFW_KEY_Y;
     public static final int KEY_Z = GLFW_KEY_Z;
+    public static final int KEY_SPACE = GLFW_KEY_SPACE;
+    public static final int KEY_LSHIFT = GLFW_KEY_LEFT_SHIFT;
+    public static final int KEY_ESCAPE = GLFW_KEY_ESCAPE;
 
     public static void init(Application _app) {
         keysHeld = new ArrayList<>();

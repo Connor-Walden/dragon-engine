@@ -55,8 +55,8 @@ public class Application {
         instance = new Application(app);
     }
 
-    public static void registerListener(List<EventType> eventTypeList, IListener listener) {
-        for(EventType eventType : eventTypeList) {
+    public static void registerListener(IListener listener, EventType... eventTypes) {
+        for(EventType eventType : eventTypes) {
             instance.eventGovernor.registerListener(eventType, listener);
         }
     }

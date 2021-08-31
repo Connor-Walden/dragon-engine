@@ -4,7 +4,6 @@ import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.render.Material;
 import com.salami.dragon.engine.render.Mesh;
 import com.salami.dragon.engine.render.OBJLoader;
-import com.salami.dragon.engine.render.Texture;
 
 public class Bunny {
     Entity bunnyEntity;

@@ -2,6 +2,7 @@ package com.salami.dragon.sandbox;
 
 import com.salami.dragon.engine.IApplication;
 import com.salami.dragon.engine.Application;
+import com.salami.dragon.engine.World;
 import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.camera.FirstPersonCamera;
 import com.salami.dragon.engine.ecs.entity.prefab.Bunny;
@@ -9,7 +10,6 @@ import com.salami.dragon.engine.ecs.entity.prefab.Cube;
 import com.salami.dragon.engine.event.IListener;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.input.Input;
-import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.PointLight;
 import com.salami.dragon.engine.render.RenderMode;
 import org.joml.Vector3f;
@@ -37,21 +37,22 @@ public class Sandbox implements IApplication, IListener {
 
     @Override
     public void init() throws Exception {
+
         firstPersonCamera = new FirstPersonCamera(camera);
+
+        cubeObject = new Cube().setScale(0.5f).setPosition(0, 0, -5);
+        bunnyObject = new Bunny().setScale(0.5f).setPosition(2, 0, -5);
 
         // Application configuration phase
         Application.setCursorCaptured(true);
-        Application.getSceneLight().setAmbientLight(new Vector3f(0.15f, 0.15f, 0.15f));
-        Application.getSceneLight().setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), new Vector3f(0, -1, 0), 1.0f));
-        Application.setDoDaylightCycle(false);
+
+        Application.setWorld(new World());
+        Application.getWorld().setDoDaylightCycle(true);
 
         // Application registration phase
-        Application.registerListener(this, EventType.KEY_PRESS, EventType.MOUSE_MOVE);
+        Application.registerListeners(this, EventType.KEY_PRESS, EventType.MOUSE_MOVE);
 
-        cubeObject = new Cube().setScale(0.5f).setPosition(0, 0, -5);
         Application.registerEntity(cubeObject.getCubeEntity());
-
-        bunnyObject = new Bunny().setScale(0.5f).setPosition(2, 0, -5);
         Application.registerEntity(bunnyObject.getBunnyEntity());
     }
 

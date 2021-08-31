@@ -1,5 +1,6 @@
 package com.salami.dragon.engine.render;
 
+import com.salami.dragon.engine.render.texture.Texture;
 import org.joml.Vector4f;
 
 public class Material {

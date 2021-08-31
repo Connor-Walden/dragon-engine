@@ -3,9 +3,6 @@ package com.salami.dragon.engine;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.event.Event;
-import com.salami.dragon.engine.light.PointLight;
-import com.salami.dragon.engine.light.SceneLight;
-import com.salami.dragon.engine.render.IHud;
 import com.salami.dragon.engine.render.RenderMode;
 import com.salami.dragon.engine.render.Window;
 
@@ -24,18 +21,12 @@ public class Application {
     private static Application instance;
 
     private final List<Entity> entities;
-    SceneLight sceneLight;
-    float sunAngle;
 
-    boolean doDaylightCycle = true;
-
-    IHud hud;
+    World world;
 
     private Application(IApplication app) throws Exception {
         this.app = app;
         this.eventGovernor = new EventGovernor(null);
-
-        this.sceneLight = new SceneLight();
 
         this.entities = new ArrayList<>();
         instance = this;
@@ -64,10 +55,12 @@ public class Application {
     }
 
     public static void registerApp(IApplication app) throws Exception {
+        System.setProperty("java.awt.headless", "true");
+
         instance = new Application(app);
     }
 
-    public static void registerListener(IListener listener, EventType... eventTypes) {
+    public static void registerListeners(IListener listener, EventType... eventTypes) {
         for(EventType eventType : eventTypes) {
             instance.eventGovernor.registerListener(eventType, listener);
         }
@@ -75,6 +68,7 @@ public class Application {
 
     public static void registerEntity(Entity entity) {
         instance.entities.add(entity);
+        getWorld().setEntities(instance.getEntities());
     }
 
     public void start() throws Exception {
@@ -113,6 +107,8 @@ public class Application {
             app.tick(delta);
             window.tick(delta);
 
+            getWorld().getSkyBox().setPosition(app.CAMERA().getPosition().x, app.CAMERA().getPosition().y, app.CAMERA().getPosition().z);
+
             this.eventGovernor.fireEvent(EventType.APPLICATION_TICK);
         }
 
@@ -139,14 +135,6 @@ public class Application {
         }
     }
 
-    public static void setDoDaylightCycle(boolean doCycle) {
-        instance.doDaylightCycle = doCycle;
-    }
-
-    public static boolean getDoDaylightCycle() {
-        return instance.doDaylightCycle;
-    }
-
     public static void centreCursor() {
         glfwSetCursorPos(instance.getWindow().getGLFWWindow(), instance.getWindow().getWidth() / 2f, instance.getWindow().getHeight() / 2f);
     }
@@ -159,60 +147,12 @@ public class Application {
         instance.getWindow().setRenderMode(renderMode);
     }
 
-    public static SceneLight getSceneLight() {
-        return instance.sceneLight;
+    public static void setWorld(World world) {
+        instance.world = world;
     }
 
-    public static void setSunAngle(float angle) {
-        instance.sunAngle = angle;
-    }
-
-    public static float getSunAngle() {
-        return instance.sunAngle;
-    }
-
-    public static void addPointLight(PointLight pointLight) {
-        PointLight[] pointLightList = instance.sceneLight.getPointLightList();
-
-        if(pointLightList == null) pointLightList = new PointLight[1];
-
-        PointLight[] newArr = new PointLight[pointLightList.length + 1];
-
-        for(int i = 0; i < newArr.length; i++) {
-            if(i != pointLightList.length) {
-                newArr[i] = pointLightList[i];
-            } else {
-                newArr[i] = pointLight;
-            }
-        }
-
-        instance.sceneLight.setPointLightList(newArr);
-    }
-
-    public static void removePointLight(PointLight pointLight) {
-        PointLight[] pointLightList = instance.sceneLight.getPointLightList();
-
-        List<PointLight> newList = new ArrayList<>();
-
-        for(PointLight pl : pointLightList) {
-            if(pl != pointLight) {
-                newList.add(pl);
-            }
-        }
-
-        newList.toArray(instance.sceneLight.getPointLightList());
-    }
-
-    public static PointLight[] getPointLights() {
-        return instance.sceneLight.getPointLightList();
-    }
-
-    public static void setHUD(IHud hud) {
-        instance.hud = hud;
-    }
-
-    public static IHud getHUD() {
-        return instance.hud;
+    public static World getWorld() {
+        return instance.world;
     }
 
     public static void maximizeWindow() {

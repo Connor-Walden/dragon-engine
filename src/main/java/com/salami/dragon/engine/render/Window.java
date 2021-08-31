@@ -5,7 +5,6 @@ import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.event.EventType;
 import com.salami.dragon.engine.input.Input;
-import com.salami.dragon.engine.log.Logger;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
@@ -91,8 +90,16 @@ public class Window {
         GL.createCapabilities();
         glfwSwapInterval(1);
         glEnable(GL_DEPTH_TEST);
+
         glPointSize(5.0f);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+        // Support for transparencies
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
 
         setupGLFWCallbacks();
 
@@ -108,7 +115,7 @@ public class Window {
 
                     app.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
 
-                    context.swapBuffers(camera, app.getEntities(), Application.getSceneLight(), Application.getHUD());
+                    context.swapBuffers(camera, Application.getWorld());
                 }
 
                 prevWidth = _width;
@@ -257,7 +264,7 @@ public class Window {
         // Poll the events and swap the buffers
         glfwPollEvents();
 
-        if(Application.getDoDaylightCycle())
+        if(Application.getWorld().getDoDaylightCycle())
             dayCycleTimer += delta;
 
         if(dayCycleTimer > Application.DAY_CYCLE_TIME) {
@@ -268,32 +275,31 @@ public class Window {
 
         // Update directional light direction, intensity and colour
 
-        Application.setSunAngle(360 * percentDayCycleComplete);
+        Application.getWorld().setSunAngle(360 * percentDayCycleComplete);
 
-        if (Application.getSunAngle() > 90) {
-            Application.getSceneLight().getDirectionalLight().setIntensity(0);
-            if (Application.getSunAngle() >= 360) {
-                Application.setSunAngle(-90);
+        if (Application.getWorld().getSunAngle() > 90) {
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(0);
+            if (Application.getWorld().getSunAngle() >= 360) {
+                Application.getWorld().setSunAngle(-90);
             }
-        } else if (Application.getSunAngle() <= -80 || Application.getSunAngle() >= 80) {
-            float factor = 1 - (float)(Math.abs(Application.getSunAngle()) - 80)/ 10.0f;
-            Application.getSceneLight().getDirectionalLight().setIntensity(factor);
-            Application.getSceneLight().getDirectionalLight().getColor().y = Math.max(factor, 0.9f);
-            Application.getSceneLight().getDirectionalLight().getColor().z = Math.max(factor, 0.5f);
+        } else if (Application.getWorld().getSunAngle() <= -80 || Application.getWorld().getSunAngle() >= 80) {
+            float factor = 1 - (float)(Math.abs(Application.getWorld().getSunAngle()) - 80)/ 10.0f;
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(factor);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = Math.max(factor, 0.9f);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = Math.max(factor, 0.5f);
         } else {
-            Application.getSceneLight().getDirectionalLight().setIntensity(1);
-            Application.getSceneLight().getDirectionalLight().getColor().x = 1;
-            Application.getSceneLight().getDirectionalLight().getColor().y = 1;
-            Application.getSceneLight().getDirectionalLight().getColor().z = 1;
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(1);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().x = 1;
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = 1;
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = 1;
         }
 
-        double angRad = Math.toRadians(Application.getSunAngle());
+        double angRad = Math.toRadians(Application.getWorld().getSunAngle());
 
-        Application.getSceneLight().getDirectionalLight().getDirection().x = (float) Math.sin(angRad);
-        Application.getSceneLight().getDirectionalLight().getDirection().y = (float) Math.cos(angRad);
+        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().x = (float) Math.sin(angRad);
+        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().y = (float) Math.cos(angRad);
 
-
-        context.swapBuffers(camera, app.getEntities(), Application.getSceneLight(), Application.getHUD());
+        context.swapBuffers(camera, Application.getWorld());
     }
 
     public boolean RUNNING() {
@@ -301,6 +307,7 @@ public class Window {
             return true;
 
         terminate();
+
         return false;
     }
 

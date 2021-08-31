@@ -1,11 +1,13 @@
 package com.salami.dragon.engine.render;
 
-import org.joml.Vector3f;
+import com.salami.dragon.engine.ecs.entity.Entity;
+import com.salami.dragon.engine.render.texture.Texture;
 import org.lwjgl.system.MemoryUtil;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL15.*;
@@ -59,7 +61,12 @@ public class Mesh {
             vboId = glGenBuffers();
             vboIdList.add(vboId);
             vecNormalsBuffer = MemoryUtil.memAllocFloat(normals.length);
-            vecNormalsBuffer.put(normals).flip();
+            if (vecNormalsBuffer.capacity() > 0) {
+                vecNormalsBuffer.put(normals).flip();
+            } else {
+                // Create empty structure
+                vecNormalsBuffer = MemoryUtil.memAllocFloat(positions.length);
+            }
             glBindBuffer(GL_ARRAY_BUFFER, vboId);
             glBufferData(GL_ARRAY_BUFFER, vecNormalsBuffer, GL_STATIC_DRAW);
             glEnableVertexAttribArray(2);
@@ -107,8 +114,9 @@ public class Mesh {
         return vertexCount;
     }
 
-    public void render() {
+    private void initRender() {
         Texture texture = material.getTexture();
+
         if (texture != null) {
             // Activate firs texture bank
             glActiveTexture(GL_TEXTURE0);
@@ -119,21 +127,60 @@ public class Mesh {
         // Draw the mesh
         glBindVertexArray(getVaoId());
 
-        glDrawElements(GL_TRIANGLES, getVertexCount(), GL_UNSIGNED_INT, 0);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+    }
 
+    private void endRender() {
         // Restore state
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
+
         glBindVertexArray(0);
+
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    public void render() {
+        initRender();
+
+        glDrawElements(GL_TRIANGLES, getVertexCount(), GL_UNSIGNED_INT, 0);
+
+        endRender();
+    }
+
+    public void renderList(List<Entity> entities, Consumer<Entity> consumer) {
+        initRender();
+        for (Entity entity : entities) {
+            // Set up data requiered by gameItem
+            consumer.accept(entity);
+            // Render this game item
+            glDrawElements(GL_TRIANGLES, getVertexCount(), GL_UNSIGNED_INT, 0);
+        }
+        endRender();
+    }
+
+
     public void cleanUp() {
+        glDisableVertexAttribArray(0);
+
+        // Delete the VBOs
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        for (int vboId : vboIdList) {
+            glDeleteBuffers(vboId);
+        }
+
         // Delete the texture
         Texture texture = material.getTexture();
         if (texture != null) {
             texture.cleanup();
         }
 
-        deleteBuffers();
+        // Delete the VAO
+        glBindVertexArray(0);
+        glDeleteVertexArrays(vaoId);
     }
 
     public void deleteBuffers() {

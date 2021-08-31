@@ -4,14 +4,13 @@ import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.render.Material;
 import com.salami.dragon.engine.render.Mesh;
 import com.salami.dragon.engine.render.OBJLoader;
-import com.salami.dragon.engine.render.Texture;
+import com.salami.dragon.engine.render.texture.Texture;
 
 public class Cube {
     Entity cubeEntity;
 
     public Cube() throws Exception {
-        Texture texture = new Texture("rockwall.png");
-        texture.loadToGL();
+        Texture texture = new Texture("textures/rockwall.png");
 
         Material material = new Material();
         material.setTexture(texture);

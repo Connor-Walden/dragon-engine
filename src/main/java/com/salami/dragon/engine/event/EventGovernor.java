@@ -52,9 +52,9 @@ public class EventGovernor {
         eventMap.get(eventType).registerListener(listener);
     }
 
-    public void registerListeners(Map<EventType, IListener> listenerMap) {
-        for(EventType eventType : listenerMap.keySet()) {
-            registerListener(eventType, listenerMap.get(eventType));
+    public void registerListeners(IListener listener, EventType... events) {
+        for(EventType eventType : events) {
+            registerListener(eventType, listener);
         }
     }
 }

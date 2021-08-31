@@ -2,6 +2,7 @@ package com.salami.dragon.engine.render.shader;
 
 import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.PointLight;
+import com.salami.dragon.engine.light.SpotLight;
 import com.salami.dragon.engine.render.Material;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -124,22 +125,22 @@ public class ShaderProgram {
         setUniform(uniformName + ".att.exponent", att.getExponent());
     }
 
-//    public void setUniform(String uniformName, SpotLight[] spotLights) {
-//        int numLights = spotLights != null ? spotLights.length : 0;
-//        for (int i = 0; i < numLights; i++) {
-//            setUniform(uniformName, spotLights[i], i);
-//        }
-//    }
-//
-//    public void setUniform(String uniformName, SpotLight spotLight, int pos) {
-//        setUniform(uniformName + "[" + pos + "]", spotLight);
-//    }
-//
-//    public void setUniform(String uniformName, SpotLight spotLight) {
-//        setUniform(uniformName + ".pl", spotLight.getPointLight());
-//        setUniform(uniformName + ".conedir", spotLight.getConeDirection());
-//        setUniform(uniformName + ".cutoff", spotLight.getCutOff());
-//    }
+    public void setUniform(String uniformName, SpotLight[] spotLights) {
+        int numLights = spotLights != null ? spotLights.length : 0;
+        for (int i = 0; i < numLights; i++) {
+            setUniform(uniformName, spotLights[i], i);
+        }
+    }
+
+    public void setUniform(String uniformName, SpotLight spotLight, int pos) {
+        setUniform(uniformName + "[" + pos + "]", spotLight);
+    }
+
+    public void setUniform(String uniformName, SpotLight spotLight) {
+        setUniform(uniformName + ".pl", spotLight.getPointLight());
+        setUniform(uniformName + ".conedir", spotLight.getConeDirection());
+        setUniform(uniformName + ".cutoff", spotLight.getCutOff());
+    }
 
     public void setUniform(String uniformName, DirectionalLight dirLight) {
         setUniform(uniformName + ".colour", dirLight.getColor());

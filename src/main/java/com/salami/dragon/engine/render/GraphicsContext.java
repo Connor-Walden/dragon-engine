@@ -10,7 +10,7 @@ import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.PointLight;
 import com.salami.dragon.engine.light.WorldLight;
 import com.salami.dragon.engine.light.SpotLight;
-import com.salami.dragon.engine.log.Logger;
+import com.salami.dragon.engine.render.mesh.Mesh;
 import com.salami.dragon.engine.render.shader.ShaderProgram;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -43,7 +43,7 @@ public class GraphicsContext {
     private ShaderProgram worldShaderProgram;
     private ShaderProgram hudShaderProgram;
     private ShaderProgram skyBoxShaderProgram;
-    Transformation transformation;
+    static Transformation transformation;
 
     public GraphicsContext(Window window) {
         this.window = window;
@@ -236,5 +236,9 @@ public class GraphicsContext {
 
         if(window.getGLFWWindow() != NULL)
             glfwSwapBuffers(window.getGLFWWindow());
+    }
+
+    public static Transformation getTransformation() {
+        return transformation;
     }
 }

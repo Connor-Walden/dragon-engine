@@ -64,4 +64,8 @@ public class FirstPersonCamera {
         Vector2f rotVec = displVec;
         camera.moveRotation(rotVec.x * SENSITIVITY, rotVec.y * SENSITIVITY, 0);
     }
+
+    public Camera getCamera() {
+        return camera;
+    }
 }

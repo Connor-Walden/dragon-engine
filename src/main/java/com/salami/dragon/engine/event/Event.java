@@ -3,6 +3,8 @@ package com.salami.dragon.engine.event;
 import java.util.List;
 import java.util.ArrayList;
 
+import static com.salami.dragon.engine.event.EventType.*;
+
 public class Event {
     List<IListener> listeners;
 
@@ -43,6 +45,16 @@ public class Event {
         if(eventType == EventType.MOUSE_SCROLL) {
             for(IListener listener : listeners) {
                 listener.onMouseScrollEvent(this, amount);
+            }
+        }
+    }
+
+    public void fireAudioEvent() {
+        if(eventType == AUDIO_INIT || eventType == AUDIO_SOURCE_INIT || eventType == AUDIO_SOURCE_PLAY || eventType == AUDIO_SOURCE_STOP || eventType == AUDIO_SOURCE_PAUSE || eventType == AUDIO_SOURCE_CLEANUP ||
+        eventType == AUDIO_SOURCE_NEW_AUDIO || eventType == AUDIO_SOURCE_NEW_POSITION || eventType == AUDIO_SOURCE_NEW_VELOCITY || eventType == AUDIO_SOURCE_NEW_GAIN ||
+        eventType == AUDIO_LISTENER_INIT || eventType == AUDIO_LISTENER_NEW_POSITION || eventType == AUDIO_LISTENER_NEW_VELOCITY || eventType == AUDIO_LISTENER_NEW_ORIENTATION) {
+            for(IListener listener : listeners) {
+                listener.onAudioEvent(this);
             }
         }
     }

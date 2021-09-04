@@ -17,7 +17,9 @@ public class EventGovernor {
     public void fireEvent(EventType name) {
         Event eventToFire = eventMap.get(name);
 
+        // Will only fire the right event as there is in-built validation for this.
         eventToFire.fireEngineEvent();
+        eventToFire.fireAudioEvent();
     }
 
     public void fireEvent(EventType name, int key) {

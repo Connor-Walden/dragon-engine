@@ -16,30 +16,33 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 public class Window {
-    private long window;
     private GraphicsContext context;
-
-    private static Window instance;
-    private Camera camera;
-
-    private final int width;
-    private final int height;
-    private final String title;
     private final Application app;
+    private Camera camera;
+    private WindowOptions opts;
 
+    private final String title;
+
+    private int width;
+    private int height;
     private int renderMode = 0; // 0 - fill, 1 - line, 2 - point
-
     private int prevXPos, prevYPos, prevWidth, prevHeight;
+
+    private long windowHandle;
+    private long window;
+
+    private boolean resized;
+    private boolean vSync;
 
     private float dayCycleTimer = 0.0f;
 
-    public Window(Application app, int width, int height, String title, Camera camera) {
-        instance = this;
+    public Window(Application app, int width, int height, String title, Camera camera, WindowOptions opts) {
+        this.camera = camera;
         this.width = width;
         this.height = height;
         this.title = title;
         this.app = app; // Needed for events.
-        this.camera = camera;
+        this.opts = opts;
 
         // Events
         Map<EventType, Event> eventMap = new HashMap<>();
@@ -52,7 +55,7 @@ public class Window {
         eventMap.put(EventType.WINDOW_MAXIMIZE, new Event(EventType.WINDOW_MAXIMIZE));
         eventMap.put(EventType.WINDOW_UN_MAXIMIZE, new Event(EventType.WINDOW_UN_MAXIMIZE));
 
-        this.app.getEventGovernor().registerEvents(eventMap);
+        Application.getEventGovernor().registerEvents(eventMap);
     }
 
     public void init() throws Exception {
@@ -67,7 +70,7 @@ public class Window {
         }
 
         window = glfwCreateWindow(width, height, title, NULL, NULL);
-        this.app.getEventGovernor().fireEvent(EventType.WINDOW_OPEN);
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_OPEN);
 
         centreWindow();
 
@@ -77,18 +80,46 @@ public class Window {
             System.exit(1);
         }
 
-        glfwWindowHint(GLFW_SAMPLES, 4);
+
+        glfwDefaultWindowHints(); // optional, the current window hints are already the default
+        glfwWindowHint(GLFW_VISIBLE, GL_FALSE); // the window will stay hidden after creation
+        glfwWindowHint(GLFW_RESIZABLE, GL_TRUE); // the window will be resizable
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_SAMPLES, 4);
         glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+
+        if (opts.compatibleProfile) {
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+        } else {
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        }
+
+        boolean maximized = false;
+
+        // If no size has been specified set it to maximized state
+        if (width == 0 || height == 0) {
+
+            // Set up a fixed width and height so window initialization does not fail
+            width = 100;
+            height = 100;
+
+            glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+
+            maximized = true;
+        }
 
         context = new GraphicsContext(this);
         context.init();
 
         GL.createCapabilities();
-        glfwSwapInterval(1);
+
+        if (isvSync()) {
+            // Enable v-sync
+            glfwSwapInterval(1);
+        }
+
         glEnable(GL_DEPTH_TEST);
 
         glPointSize(5.0f);
@@ -113,7 +144,7 @@ public class Window {
                 if(prevWidth != _width || prevHeight != _height) {
                     glViewport(0, 0, _width, _height);
 
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
 
                     context.swapBuffers(camera, Application.getWorld());
                 }
@@ -126,7 +157,7 @@ public class Window {
         glfwSetWindowPosCallback(window, new GLFWWindowPosCallback() {
             @Override public void invoke(long window, int xpos, int ypos) {
                 if(xpos != prevXPos || ypos != prevYPos) {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_MOVE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MOVE);
                 }
 
                 prevXPos = xpos;
@@ -138,9 +169,9 @@ public class Window {
             @Override
             public void invoke(long window, boolean focused) {
                 if(focused) {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_FOCUS);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_FOCUS);
                 } else {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_LOST_FOCUS);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_LOST_FOCUS);
                 }
             }
         });
@@ -149,9 +180,9 @@ public class Window {
             @Override
             public void invoke(long window, boolean maximized) {
                 if(maximized) {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE);
                 } else {
-                    app.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE);
                 }
             }
         });
@@ -255,7 +286,7 @@ public class Window {
 
         glfwDestroyWindow(window);
 
-        this.app.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE);
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE);
 
         glfwTerminate();
     }
@@ -336,36 +367,53 @@ public class Window {
     }
 
     public RenderMode getRenderMode() {
-        switch(renderMode) {
-            case 0:
-                return RenderMode.FILL;
-            case 1:
-                return RenderMode.LINE;
-            case 2:
-                return RenderMode.POINT;
-            default:
-                return RenderMode.FILL;
-        }
+        RenderMode tmp = switch (renderMode) {
+            case 1 -> RenderMode.LINE;
+            case 2 -> RenderMode.POINT;
+            default -> RenderMode.FILL;
+        };
+
+        return tmp;
     }
 
     public void setRenderMode(RenderMode mode) {
         switch (mode) {
-            case FILL:
+            case FILL -> {
                 renderMode = 0;
-                glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-                break;
-            case LINE:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
+            case LINE -> {
                 renderMode = 1;
-                glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-                break;
-            case POINT:
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            }
+            case POINT -> {
                 renderMode = 2;
-                glPolygonMode( GL_FRONT_AND_BACK, GL_POINT );
-                break;
-            default:
-                renderMode = 0;
-                glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-                break;
+                glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            }
         }
+    }
+
+    public boolean isvSync() {
+        return vSync;
+    }
+
+    public void setvSync(boolean vSync) {
+        this.vSync = vSync;
+    }
+
+    public WindowOptions getWindowOptions() {
+        return opts;
+    }
+
+
+    public static class WindowOptions {
+
+        public boolean cullFace;
+
+        public boolean showTriangles;
+
+        public boolean showFps;
+
+        public boolean compatibleProfile;
     }
 }

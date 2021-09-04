@@ -2,6 +2,7 @@ package com.salami.dragon.engine.ecs.entity;
 
 import com.salami.dragon.engine.camera.Camera;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class Transformation {
@@ -59,7 +60,7 @@ public class Transformation {
     }
 
     public Matrix4f buildModelViewMatrix(Entity entity, Matrix4f viewMatrix) {
-        Vector3f rotation = entity.getRotation();
+        Quaternionf rotation = entity.getRotation();
         modelMatrix.identity().translate(entity.getPosition()).
                 rotateX((float)Math.toRadians(-rotation.x)).
                 rotateY((float)Math.toRadians(-rotation.y)).
@@ -70,7 +71,7 @@ public class Transformation {
     }
 
     public Matrix4f buildOrthoProjModelMatrix(Entity entity, Matrix4f orthoMatrix) {
-        Vector3f rotation = entity.getRotation();
+        Quaternionf rotation = entity.getRotation();
         modelMatrix.identity().translate(entity.getPosition()).
                 rotateX((float) Math.toRadians(-rotation.x)).
                 rotateY((float) Math.toRadians(-rotation.y)).

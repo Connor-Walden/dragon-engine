@@ -36,7 +36,8 @@ public class Application {
             app.WIDTH(),
             app.HEIGHT(),
             app.TITLE(),
-            app.CAMERA()
+            app.CAMERA(),
+            app.WINDOW_OPTIONS()
         );
 
         setupEvents();
@@ -80,10 +81,11 @@ public class Application {
     }
 
     public static void stop() {
+        getEventGovernor().fireEvent(EventType.APPLICATION_STOP);
+
         // Destroy the window
         instance.getWindow().invalidateWindow();
 
-        instance.getEventGovernor().fireEvent(EventType.APPLICATION_STOP);
     }
 
     public void init() throws Exception {
@@ -159,8 +161,8 @@ public class Application {
         glfwMaximizeWindow(instance.getWindow().getGLFWWindow());
     }
 
-    public EventGovernor getEventGovernor() {
-        return eventGovernor;
+    public static EventGovernor getEventGovernor() {
+        return instance.eventGovernor;
     }
 
     public Window getWindow() {

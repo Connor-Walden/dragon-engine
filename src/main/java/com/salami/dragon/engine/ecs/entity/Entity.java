@@ -1,6 +1,7 @@
 package com.salami.dragon.engine.ecs.entity;
 
-import com.salami.dragon.engine.render.Mesh;
+import com.salami.dragon.engine.render.mesh.Mesh;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class Entity {
@@ -10,12 +11,15 @@ public class Entity {
 
     private float scale;
 
-    private final Vector3f rotation;
+    private final Quaternionf rotation;
+
+    private int textPos;
 
     public Entity() {
         position = new Vector3f();
         scale = 1;
-        rotation = new Vector3f();
+        rotation = new Quaternionf();
+        textPos = 0;
     }
 
     public Entity(Mesh mesh) {
@@ -33,6 +37,14 @@ public class Entity {
         this.position.z = z;
     }
 
+    public void setTextPos(int textPos) {
+        this.textPos = textPos;
+    }
+
+    public int getTextPos() {
+        return textPos;
+    }
+
     public float getScale() {
         return scale;
     }
@@ -41,14 +53,12 @@ public class Entity {
         this.scale = scale;
     }
 
-    public Vector3f getRotation() {
+    public Quaternionf getRotation() {
         return rotation;
     }
 
-    public void setRotation(float x, float y, float z) {
-        this.rotation.x = x;
-        this.rotation.y = y;
-        this.rotation.z = z;
+    public final void setRotation(Quaternionf q) {
+        this.rotation.set(q);
     }
 
     public Mesh getMesh() {

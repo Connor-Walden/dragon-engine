@@ -4,7 +4,7 @@ import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.ecs.entity.prefab.SkyBox;
 import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.WorldLight;
-import com.salami.dragon.engine.render.Mesh;
+import com.salami.dragon.engine.render.mesh.Mesh;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;

@@ -2,7 +2,7 @@ package com.salami.dragon.engine.ecs.entity.prefab;
 
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.render.Material;
-import com.salami.dragon.engine.render.Mesh;
+import com.salami.dragon.engine.render.mesh.Mesh;
 import com.salami.dragon.engine.render.OBJLoader;
 
 public class Bunny {

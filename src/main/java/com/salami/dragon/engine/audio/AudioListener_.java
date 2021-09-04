@@ -3,12 +3,12 @@ package com.salami.dragon.engine.audio;
 import org.joml.Vector3f;
 import static org.lwjgl.openal.AL10.*;
 
-public class AudioListener {
-    public AudioListener() {
+public class AudioListener_ {
+    public AudioListener_() {
         this(new Vector3f());
     }
 
-    public AudioListener(Vector3f position) {
+    public AudioListener_(Vector3f position) {
         alListener3f(AL_POSITION, position.x, position.y, position.z);
         alListener3f(AL_VELOCITY, 0, 0, 0);
     }

@@ -24,11 +24,11 @@ public class Audio {
 
     private long context;
 
-    private AudioListener listener;
+    private AudioListener_ listener;
 
     private final List<AudioBuffer> audioBufferList;
 
-    private final Map<String, AudioSource> audioSourceMap;
+    private final Map<String, AudioSource_> audioSourceMap;
 
     private final Matrix4f cameraMatrix;
 
@@ -52,16 +52,16 @@ public class Audio {
         AL.createCapabilities(deviceCaps);
     }
 
-    public void addAudioSource(String name, AudioSource audioSource) {
+    public void addAudioSource(String name, AudioSource_ audioSource) {
         this.audioSourceMap.put(name, audioSource);
     }
 
-    public AudioSource getAudioSource(String name) {
+    public AudioSource_ getAudioSource(String name) {
         return this.audioSourceMap.get(name);
     }
 
     public void playAudioSource(String name) {
-        AudioSource audioSource = this.audioSourceMap.get(name);
+        AudioSource_ audioSource = this.audioSourceMap.get(name);
         if (audioSource != null && !audioSource.isPlaying()) {
             audioSource.play();
         }
@@ -75,11 +75,11 @@ public class Audio {
         this.audioBufferList.add(audioBuffer);
     }
 
-    public AudioListener getListener() {
+    public AudioListener_ getListener() {
         return this.listener;
     }
 
-    public void setListener(AudioListener listener) {
+    public void setListener(AudioListener_ listener) {
         this.listener = listener;
     }
 
@@ -100,7 +100,7 @@ public class Audio {
     }
 
     public void cleanup() {
-        for (AudioSource audioSource : audioSourceMap.values()) {
+        for (AudioSource_ audioSource : audioSourceMap.values()) {
             audioSource.cleanup();
         }
         audioSourceMap.clear();

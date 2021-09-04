@@ -10,10 +10,10 @@ import java.util.Map;
 
 import static org.lwjgl.openal.AL10.*;
 
-public class AudioSource {
+public class AudioSource_ {
     private final int sourceId;
 
-    public AudioSource(boolean loop, boolean relative) {
+    public AudioSource_(boolean loop, boolean relative) {
         this.sourceId = alGenSources();
 
         if (loop) {

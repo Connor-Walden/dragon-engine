@@ -5,8 +5,8 @@ import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.World;
 import com.salami.dragon.engine.audio.Audio;
 import com.salami.dragon.engine.audio.AudioBuffer;
-import com.salami.dragon.engine.audio.AudioListener;
-import com.salami.dragon.engine.audio.AudioSource;
+import com.salami.dragon.engine.audio.AudioListener_;
+import com.salami.dragon.engine.audio.AudioSource_;
 import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.camera.FirstPersonCamera;
 import com.salami.dragon.engine.ecs.entity.prefab.Bunny;
@@ -71,34 +71,26 @@ public class Sandbox implements IApplication, IListener {
 
         Application.registerEntity(cubeObject.getCubeEntity());
         Application.registerEntity(bunnyObject.getBunnyEntity());
-
     }
 
     private void setupAudio() throws Exception {
-        AudioBuffer buffBack = new AudioBuffer("/audio/background.ogg");
-        audio.addAudioBuffer(buffBack);
-        AudioSource sourceBack = new AudioSource(true, true);
-        sourceBack.setBuffer(buffBack.getBufferId());
-        audio.addAudioSource(Sounds.MUSIC.toString(), sourceBack);
-
         AudioBuffer buffBeep = new AudioBuffer("/audio/beep.ogg");
         audio.addAudioBuffer(buffBeep);
-        AudioSource sourceBeep = new AudioSource(false, true);
+        AudioSource_ sourceBeep = new AudioSource_(false, true);
         sourceBeep.setBuffer(buffBeep.getBufferId());
         audio.addAudioSource(Sounds.BEEP.toString(), sourceBeep);
+        sourceBeep.play();
 
         AudioBuffer buffFire = new AudioBuffer("/audio/fire.ogg");
         audio.addAudioBuffer(buffFire);
-        AudioSource sourceFire = new AudioSource(true, false);
+        AudioSource_ sourceFire = new AudioSource_(true, false);
         Vector3f pos = cubeObject.getCubeEntity().getPosition();
         sourceFire.setPosition(pos);
         sourceFire.setBuffer(buffFire.getBufferId());
         audio.addAudioSource(Sounds.FIRE.toString(), sourceFire);
         sourceFire.play();
 
-        audio.setListener(new AudioListener(new Vector3f()));
-
-        sourceBack.play();
+        audio.setListener(new AudioListener_(camera.getPosition()));
     }
 
     // delta - time in seconds since last frame.
@@ -108,6 +100,7 @@ public class Sandbox implements IApplication, IListener {
         firstPersonCamera.rotateCamera();
 
         playerLight.setPosition(camera.getPosition());
+        audio.getListener().setPosition(camera.getPosition());
     }
 
     @Override

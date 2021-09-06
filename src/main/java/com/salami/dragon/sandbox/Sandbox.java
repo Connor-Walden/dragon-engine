@@ -7,8 +7,10 @@ import com.salami.dragon.engine.ecs.component.prefab.*;
 import com.salami.dragon.engine.ecs.entity.prefab.*;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.input.Input;
+import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.RenderMode;
 import com.salami.dragon.engine.render.Window;
+import org.joml.Vector3f;
 
 public class Sandbox implements IApplication, IListener {
     static Player player;
@@ -32,8 +34,8 @@ public class Sandbox implements IApplication, IListener {
     @Override
     public void init() throws Exception {
         // Application creation phase
-        cubeObject = new Cube().setScale(0.5f).setPosition(0, 0, -5);
-        bunnyObject = new Bunny().setScale(0.5f).setPosition(2, 0, -5);
+        cubeObject = new Cube().setScale(0.5f).setPosition(0, -2, -5);
+        bunnyObject = new Bunny().setScale(0.5f).setPosition(0, 0, -5);
 
         cubeObject.addComponent(
                 Components.AUDIO_SOURCE,
@@ -49,20 +51,19 @@ public class Sandbox implements IApplication, IListener {
         Application.setCursorCaptured(true);
 
         Application.setWorld(new World());
-        Application.getWorld().setDoDaylightCycle(true);
-//        Application.getWorld().setSkyBox(new SkyBox("/models/skybox.obj", "textures/skybox.png"));
-//        Application.getWorld().getSkyBox().setScale(500.0f);
+        Application.getWorld().setDoDaylightCycle(false);
 
         // Application registration phase
         Application.registerListeners(this, EventType.KEY_PRESS, EventType.MOUSE_MOVE, EventType.APPLICATION_STOP, EventType.COMPONENTS_INIT);
         Application.registerEntities(cubeObject.getCubeEntity(), bunnyObject.getBunnyEntity(), player);
         Application.registerAudio(player);
+        Application.registerFog(new Fog(true, new Vector3f(0.5f, 0.5f, 0.5f), 0.15f, 15.0f));
     }
 
     // delta - time in seconds since last frame.
     @Override
     public void tick(float delta) {
-        cubeObject.getCubeEntity().move(0.01f, 0, 0);
+        //cubeObject.getCubeEntity().move(0.01f, 0, 0);
     }
 
     @Override

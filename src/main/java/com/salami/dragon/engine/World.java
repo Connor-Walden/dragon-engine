@@ -4,6 +4,7 @@ import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.ecs.entity.prefab.SkyBox;
 import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.WorldLight;
+import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.mesh.Mesh;
 import org.joml.Vector3f;
 
@@ -18,12 +19,14 @@ public class World {
     private WorldLight worldLight;
     float sunAngle;
     boolean doDaylightCycle = true;
+    Fog fog;
 
     public World() throws Exception {
         meshMap = new HashMap<>();
 
         setupWorldLight();
 
+        // Default skybox
         skyBox = new SkyBox("/models/skybox.obj", "textures/skybox.png");
         skyBox.setScale(500.0f);
     }
@@ -32,6 +35,8 @@ public class World {
         worldLight = new WorldLight();
         worldLight.setAmbientLight(new Vector3f(0.15f, 0.15f, 0.15f));
         worldLight.setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), new Vector3f(0, -1, 0), 1.0f));
+        worldLight.getDirectionalLight().setShadowPosMult(5);
+        worldLight.getDirectionalLight().setOrthoCords(-10.0f, 10.0f, -10.0f, 10.0f, -1.0f, 20.0f);
         worldLight.setSkyBoxLight(new Vector3f(1.0f, 1.0f, 1.0f));
         sunAngle = 0.0f;
     }
@@ -65,6 +70,14 @@ public class World {
 
     public void setSkyBox(SkyBox skyBox) {
         this.skyBox = skyBox;
+    }
+
+    public Fog getFog() {
+        return fog;
+    }
+
+    public void setFog(Fog fog) {
+        this.fog = fog;
     }
 
     public WorldLight getWorldLight() {

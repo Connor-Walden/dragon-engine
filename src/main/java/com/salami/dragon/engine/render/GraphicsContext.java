@@ -1,6 +1,5 @@
 package com.salami.dragon.engine.render;
 
-import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.Utils;
 import com.salami.dragon.engine.World;
 import com.salami.dragon.engine.camera.Camera;
@@ -17,25 +16,17 @@ import com.salami.dragon.engine.render.texture.Texture;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.BufferUtils;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL42.*;
-import static org.lwjgl.opengl.GL43.GL_COMPUTE_WORK_GROUP_SIZE;
-import static org.lwjgl.opengl.GL43.glDispatchCompute;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE2;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
+import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
+import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GraphicsContext {
@@ -51,14 +42,13 @@ public class GraphicsContext {
     private ShaderProgram worldShaderProgram;
     private ShaderProgram hudShaderProgram;
     private ShaderProgram skyBoxShaderProgram;
-    private ShaderProgram postProcessingShaderProgram;
-    private ShaderProgram postProcessingQuadShaderProgram;
+    private ShaderProgram depthShaderProgram;
 
     private Window window;
 
-    private static Transformation transformation;
+    private ShadowMap shadowMap;
 
-    private Texture ppTex;
+    private static Transformation transformation;
 
     public GraphicsContext(Window window) {
         this.window = window;
@@ -70,32 +60,12 @@ public class GraphicsContext {
 
     public void prepare() throws Exception {
         transformation = new Transformation();
+        shadowMap = new ShadowMap();
 
+        setupDepthShader();
         setupSkyboxShader();
         setupWorldShader();
         setupHUDShader();
-        setupPostProcessingShader();
-    }
-
-    private void setupPostProcessingShader() throws Exception {
-        ppTex = new Texture(window.getWidth(), window.getHeight(), GL_TEXTURE_2D);
-        int vao = quadFullScreenVao();
-        createPrograms();
-    }
-
-    private void setupWorldShader() throws Exception {
-        worldShaderProgram = setupShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
-        createUniforms(worldShaderProgram,"projectionMatrix", "modelViewMatrix", "texture_sampler", "specularPower", "ambientLight");
-
-        worldShaderProgram.createMaterialUniform("material");
-        worldShaderProgram.createPointLightListUniform("pointLights", MAX_POINT_LIGHTS);
-        worldShaderProgram.createSpotLightListUniform("spotLights", MAX_SPOT_LIGHTS);
-        worldShaderProgram.createDirectionalLightUniform("directionalLight");
-    }
-
-    private void setupHUDShader() throws Exception {
-        hudShaderProgram = setupShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
-        createUniforms(hudShaderProgram, "projModelMatrix", "colour", "hasTexture");
     }
 
     private void setupSkyboxShader() throws Exception {
@@ -103,12 +73,38 @@ public class GraphicsContext {
         createUniforms(skyBoxShaderProgram, "projectionMatrix", "modelViewMatrix", "texture_sampler", "ambientLight");
     }
 
+    private void setupWorldShader() throws Exception {
+        worldShaderProgram = setupShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
+        createUniforms(worldShaderProgram,"projectionMatrix", "modelViewMatrix", "texture_sampler", "specularPower", "ambientLight", "normalMap", "shadowMap", "orthoProjectionMatrix", "modelLightViewMatrix");
+
+        worldShaderProgram.createMaterialUniform("material");
+        worldShaderProgram.createPointLightListUniform("pointLights", MAX_POINT_LIGHTS);
+        worldShaderProgram.createSpotLightListUniform("spotLights", MAX_SPOT_LIGHTS);
+        worldShaderProgram.createDirectionalLightUniform("directionalLight");
+        worldShaderProgram.createFogUniform("fog");
+    }
+
+    private void setupHUDShader() throws Exception {
+        hudShaderProgram = setupShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
+        createUniforms(hudShaderProgram, "projModelMatrix", "colour", "hasTexture");
+    }
+
+    private void setupDepthShader() throws Exception {
+        depthShaderProgram = setupShaderProgram("/shaders/depth_vertex.glsl", "/shaders/depth_fragment.glsl");
+        createUniforms(depthShaderProgram, "orthoProjectionMatrix", "modelLightViewMatrix");
+    }
+
     public void clear() {
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     public void render(Window window, Camera camera, World world) throws Exception {
         clear();
+
+        // Render depth map before view ports has been set up
+        renderDepthMap(window, camera, world);
+
+        glViewport(0, 0, window.getWidth(), window.getHeight());
 
         // Update projection and view atrices once per render cycle
         transformation.updateProjectionMatrix(FOV, window.getWidth(), window.getHeight(), Z_NEAR, Z_FAR);
@@ -118,28 +114,73 @@ public class GraphicsContext {
         renderSkyBox(world);
     }
 
+    private void renderDepthMap(Window window, Camera camera, World world) {
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowMap.getDepthMapFBO());
+        glViewport(0, 0, ShadowMap.SHADOW_MAP_WIDTH, ShadowMap.SHADOW_MAP_HEIGHT);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        depthShaderProgram.bind();
+
+        DirectionalLight light = world.getWorldLight().getDirectionalLight();
+        Vector3f lightDirection = light.getDirection();
+
+        float lightAngleX = (float)Math.toDegrees(Math.acos(lightDirection.z));
+        float lightAngleY = (float)Math.toDegrees(Math.asin(lightDirection.x));
+        float lightAngleZ = 0;
+        Matrix4f lightViewMatrix = transformation.updateLightViewMatrix(new Vector3f(lightDirection).mul(light.getShadowPosMult()), new Vector3f(lightAngleX, lightAngleY, lightAngleZ));
+        DirectionalLight.OrthoCoords orthCoords = light.getOrthoCoords();
+        Matrix4f orthoProjMatrix = transformation.updateOrthoProjectionMatrix(orthCoords.left, orthCoords.right, orthCoords.bottom, orthCoords.top, orthCoords.near, orthCoords.far);
+
+        depthShaderProgram.setUniform("orthoProjectionMatrix", orthoProjMatrix);
+        Map<Mesh, List<Entity>> mapMeshes = world.getGameMeshes();
+        for (Mesh mesh : mapMeshes.keySet()) {
+            if(mesh != null) {
+                mesh.renderList(mapMeshes.get(mesh), (Entity entity) -> {
+                        Matrix4f modelLightViewMatrix = transformation.buildModelViewMatrix(entity, lightViewMatrix);
+                        depthShaderProgram.setUniform("modelLightViewMatrix", modelLightViewMatrix);
+                    }
+                );
+            }
+        }
+
+        // Unbind
+        depthShaderProgram.unbind();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     public void renderWorld(World world) {
         worldShaderProgram.bind();
 
         Matrix4f projectionMatrix = transformation.getProjectionMatrix();
         worldShaderProgram.setUniform("projectionMatrix", projectionMatrix);
+        Matrix4f orthoProjMatrix = transformation.getOrthoProjectionMatrix();
+        worldShaderProgram.setUniform("orthoProjectionMatrix", orthoProjMatrix);
+        Matrix4f lightViewMatrix = transformation.getLightViewMatrix();
 
         Matrix4f viewMatrix = transformation.getViewMatrix();
 
-        WorldLight sceneLight = world.getWorldLight();
-        renderLights(viewMatrix, sceneLight);
+        WorldLight worldLight = world.getWorldLight();
+        renderLights(viewMatrix, worldLight);
 
+        worldShaderProgram.setUniform("fog", world.getFog());
         worldShaderProgram.setUniform("texture_sampler", 0);
+        worldShaderProgram.setUniform("normalMap", 1);
+        worldShaderProgram.setUniform("shadowMap", 2);
+
         // Render each mesh with the associated game Items
         Map<Mesh, List<Entity>> mapMeshes = world.getGameMeshes();
-
         for (Mesh mesh : mapMeshes.keySet()) {
             if(mesh != null) {
                 worldShaderProgram.setUniform("material", mesh.getMaterial());
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthMapTexture().getId());
                 mesh.renderList(mapMeshes.get(mesh), (Entity entity) -> {
-                    Matrix4f modelViewMatrix = transformation.buildModelViewMatrix(entity, viewMatrix);
-                    worldShaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
-                });
+                        Matrix4f modelViewMatrix = transformation.buildModelViewMatrix(entity, viewMatrix);
+                        worldShaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+                        Matrix4f modelLightViewMatrix = transformation.buildModelLightViewMatrix(entity, lightViewMatrix);
+                        worldShaderProgram.setUniform("modelLightViewMatrix", modelLightViewMatrix);
+                    }
+                );
             }
         }
 
@@ -216,6 +257,12 @@ public class GraphicsContext {
 
 
     public void cleanUp() {
+        if (shadowMap != null) {
+            shadowMap.cleanup();
+        }
+        if (depthShaderProgram != null) {
+            depthShaderProgram.cleanup();
+        }
         if (skyBoxShaderProgram != null) {
             skyBoxShaderProgram.cleanup();
         }
@@ -253,139 +300,5 @@ public class GraphicsContext {
         shaderProgram.link();
 
         return shaderProgram;
-    }
-
-    private ShaderProgram setupShaderProgram(String computeLocation) throws Exception {
-        ShaderProgram shaderProgram = new ShaderProgram();
-        shaderProgram.createComputeShader(Utils.loadResource(computeLocation));
-        shaderProgram.link();
-
-        return shaderProgram;
-    }
-
-    /**
-     * Creates a VAO with a full-screen quad VBO.
-     */
-    private int quadFullScreenVao() {
-        int vao = glGenVertexArrays();
-        int vbo = glGenBuffers();
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        ByteBuffer bb = BufferUtils.createByteBuffer(2 * 6);
-        bb.put((byte) -1).put((byte) -1);
-        bb.put((byte) 1).put((byte) -1);
-        bb.put((byte) 1).put((byte) 1);
-        bb.put((byte) 1).put((byte) 1);
-        bb.put((byte) -1).put((byte) 1);
-        bb.put((byte) -1).put((byte) -1);
-        bb.flip();
-        glBufferData(GL_ARRAY_BUFFER, bb, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_BYTE, false, 0, 0L);
-        glBindVertexArray(0);
-        return vao;
-    }
-
-    /**
-     * Create the texture that will serve as our framebuffer.
-     *
-     * @return the texture id
-     */
-    private int createFramebufferTexture() {
-        int tex = glGenTextures();
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        ByteBuffer black = null;
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, window.getWidth(), window.getHeight(), 0, GL_RGBA, GL_FLOAT, black);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        return tex;
-    }
-
-    /**
-     * Create the tracing compute shader program.
-     *
-     * @throws IOException
-     */
-    private void createPrograms() throws Exception {
-        postProcessingShaderProgram = setupShaderProgram("/shaders/pp_compute.glsl");
-
-        createUniforms(postProcessingShaderProgram, "eye", "ray00", "ray10", "ray01", "ray11");
-
-        int linked = glGetProgrami(postProcessingShaderProgram.getProgramId(), GL_LINK_STATUS);
-        String programLog = glGetProgramInfoLog(postProcessingShaderProgram.getProgramId());
-        if (programLog.trim().length() > 0) {
-            System.err.println(programLog);
-        }
-        if (linked == 0) {
-            throw new AssertionError("Could not link compute program");
-        }
-
-        postProcessingQuadShaderProgram = setupShaderProgram("/shaders/pp_quad_vertex.glsl", "/shaders/pp_quad_fragment.glsl");
-        createUniforms(postProcessingQuadShaderProgram, "tex");
-
-        linked = glGetProgrami(postProcessingQuadShaderProgram.getProgramId(), GL_LINK_STATUS);
-        programLog = glGetProgramInfoLog(postProcessingQuadShaderProgram.getProgramId());
-        if (programLog.trim().length() > 0) {
-            System.err.println(programLog);
-        }
-        if (linked == 0) {
-            throw new AssertionError("Could not link quad program");
-        }
-    }
-
-    /**
-     * Compute one frame by tracing the scene using our compute shader and
-     * presenting that image on the screen.
-     */
-    private void trace() {
-        postProcessingShaderProgram.bind();
-
-        /* Set viewing frustum corner rays in shader */
-
-        postProcessingShaderProgram.setUniform("eye", window.getCamera().getPosition());
-
-        Vector3f eyeRay = window.getCamera().getEyeRay(-1, -1);
-        postProcessingShaderProgram.setUniform("ray00", eyeRay);
-
-        eyeRay = window.getCamera().getEyeRay(-1, 1);
-        postProcessingShaderProgram.setUniform("ray01", eyeRay);
-
-        eyeRay = window.getCamera().getEyeRay(1, -1);
-        postProcessingShaderProgram.setUniform("ray10", eyeRay);
-
-        eyeRay = window.getCamera().getEyeRay(1, 1);
-        postProcessingShaderProgram.setUniform("ray11", eyeRay);
-
-        /* Bind level 0 of framebuffer texture as writable image in the shader. */
-        glBindImageTexture(0, ppTex.getId(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-        /* Compute appropriate invocation dimension. */
-        int worksizeX = Utils.nextPowerOfTwo(window.getWidth());
-        int worksizeY = Utils.nextPowerOfTwo(window.getHeight());
-
-        /* Invoke the compute shader. */
-        IntBuffer workGroupSize = BufferUtils.createIntBuffer(3);
-        workGroupSize.put(glGetProgrami(postProcessingShaderProgram.getProgramId(), GL_COMPUTE_WORK_GROUP_SIZE));
-        int workGroupSizeX = workGroupSize.get(0);
-        int workGroupSizeY = workGroupSize.get(1);
-
-        glDispatchCompute(worksizeX / workGroupSizeX, worksizeY / workGroupSizeY, 1);
-
-        /* Reset image binding. */
-        glBindImageTexture(0, 0, 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        glUseProgram(0);
-
-        /*
-         * Draw the rendered image on the screen using textured full-screen
-         * quad.
-         */
-        glUseProgram(postProcessingQuadShaderProgram.getProgramId());
-        glBindTexture(GL_TEXTURE_2D, ppTex.getId());
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
-        postProcessingShaderProgram.unbind();
     }
 }

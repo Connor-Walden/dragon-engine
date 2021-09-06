@@ -3,6 +3,7 @@ package com.salami.dragon.engine.render.shader;
 import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.PointLight;
 import com.salami.dragon.engine.light.SpotLight;
+import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.Material;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -13,14 +14,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL43.GL_COMPUTE_SHADER;
 
 public class ShaderProgram {
     private final int programId;
 
     private int vertexShaderId;
+
     private int fragmentShaderId;
-    private int computeShaderId;
 
     private final Map<String, Integer> uniforms;
 
@@ -78,7 +78,15 @@ public class ShaderProgram {
         createUniform(uniformName + ".diffuse");
         createUniform(uniformName + ".specular");
         createUniform(uniformName + ".hasTexture");
+        createUniform(uniformName + ".hasNormalMap");
         createUniform(uniformName + ".reflectance");
+    }
+
+    public void createFogUniform(String uniformName) throws Exception {
+        createUniform(uniformName + ".activeFog");
+        createUniform(uniformName + ".colour");
+        createUniform(uniformName + ".density");
+        createUniform(uniformName + ".distance");
     }
 
     public void setUniform(String uniformName, Matrix4f value) {
@@ -154,7 +162,15 @@ public class ShaderProgram {
         setUniform(uniformName + ".diffuse", material.getDiffuseColour());
         setUniform(uniformName + ".specular", material.getSpecularColour());
         setUniform(uniformName + ".hasTexture", material.isTextured() ? 1 : 0);
+        setUniform(uniformName + ".hasNormalMap", material.hasNormalMap() ? 1 : 0);
         setUniform(uniformName + ".reflectance", material.getReflectance());
+    }
+
+    public void setUniform(String uniformName, Fog fog) {
+        setUniform(uniformName + ".activeFog", fog.isActive() ? 1 : 0);
+        setUniform(uniformName + ".colour", fog.getColour());
+        setUniform(uniformName + ".density", fog.getDensity());
+        setUniform(uniformName + ".distance", fog.getDistance());
     }
 
     public void createVertexShader(String shaderCode) throws Exception {
@@ -163,10 +179,6 @@ public class ShaderProgram {
 
     public void createFragmentShader(String shaderCode) throws Exception {
         fragmentShaderId = createShader(shaderCode, GL_FRAGMENT_SHADER);
-    }
-
-    public void createComputeShader(String shaderCode) throws Exception {
-        computeShaderId = createShader(shaderCode, GL_COMPUTE_SHADER);
     }
 
     protected int createShader(String shaderCode, int shaderType) throws Exception {
@@ -199,14 +211,12 @@ public class ShaderProgram {
         if (fragmentShaderId != 0) {
             glDetachShader(programId, fragmentShaderId);
         }
-        if (computeShaderId != 0) {
-            glDetachShader(programId, computeShaderId);
-        }
 
         glValidateProgram(programId);
         if (glGetProgrami(programId, GL_VALIDATE_STATUS) == 0) {
             System.err.println("Warning validating Shader code: " + glGetProgramInfoLog(programId, 1024));
         }
+
     }
 
     public void bind() {
@@ -222,9 +232,5 @@ public class ShaderProgram {
         if (programId != 0) {
             glDeleteProgram(programId);
         }
-    }
-
-    public int getProgramId() {
-        return programId;
     }
 }

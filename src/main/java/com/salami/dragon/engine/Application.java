@@ -10,6 +10,7 @@ import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.event.Event;
 import com.salami.dragon.engine.log.Logger;
+import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.RenderMode;
 import com.salami.dragon.engine.render.Window;
 
@@ -224,6 +225,10 @@ public class Application {
 
     public static EventGovernor getEventGovernor() {
         return instance.eventGovernor;
+    }
+
+    public static void registerFog(Fog fog) {
+        getWorld().setFog(fog);
     }
 
     public static Window getWindow() {

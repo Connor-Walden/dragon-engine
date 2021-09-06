@@ -3,6 +3,7 @@ package com.salami.dragon.engine;
 import com.salami.dragon.engine.audio.Audio;
 import com.salami.dragon.engine.audio.AudioBuffer;
 import com.salami.dragon.engine.audio.AudioSource_;
+import com.salami.dragon.engine.ecs.component.Components;
 import com.salami.dragon.engine.ecs.component.IComponent;
 import com.salami.dragon.engine.ecs.component.prefab.AudioListener;
 import com.salami.dragon.engine.ecs.entity.Entity;
@@ -81,7 +82,7 @@ public class Application {
         instance.audio.init();
         instance.audio.setAttenuationModel(AL_EXPONENT_DISTANCE);
 
-        AudioListener audioListenerComponent = (AudioListener) listener.getComponent("AudioListener");
+        AudioListener audioListenerComponent = (AudioListener) listener.getComponent(Components.AUDIO_LISTENER);
         instance.audio.setListener(audioListenerComponent.getSource());
     }
 
@@ -146,7 +147,7 @@ public class Application {
         eventGovernor.fireEvent(EventType.APPLICATION_INIT);
     }
 
-    public void tick() {
+    public void tick() throws Exception {
         float now, last = 0;
 
         // Loop continuously and render and update

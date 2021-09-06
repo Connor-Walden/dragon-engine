@@ -48,6 +48,12 @@ public class Entity {
         this.position.z = z;
     }
 
+    public void move(float dx, float dy, float dz) {
+        this.position.x += dx;
+        this.position.y += dy;
+        this.position.z += dz;
+    }
+
     public void setTextPos(int textPos) {
         this.textPos = textPos;
     }

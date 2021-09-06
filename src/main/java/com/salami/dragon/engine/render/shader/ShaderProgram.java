@@ -13,13 +13,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL43.GL_COMPUTE_SHADER;
 
 public class ShaderProgram {
     private final int programId;
 
     private int vertexShaderId;
-
     private int fragmentShaderId;
+    private int computeShaderId;
 
     private final Map<String, Integer> uniforms;
 
@@ -164,6 +165,10 @@ public class ShaderProgram {
         fragmentShaderId = createShader(shaderCode, GL_FRAGMENT_SHADER);
     }
 
+    public void createComputeShader(String shaderCode) throws Exception {
+        computeShaderId = createShader(shaderCode, GL_COMPUTE_SHADER);
+    }
+
     protected int createShader(String shaderCode, int shaderType) throws Exception {
         int shaderId = glCreateShader(shaderType);
         if (shaderId == 0) {
@@ -194,6 +199,9 @@ public class ShaderProgram {
         if (fragmentShaderId != 0) {
             glDetachShader(programId, fragmentShaderId);
         }
+        if (computeShaderId != 0) {
+            glDetachShader(programId, computeShaderId);
+        }
 
         glValidateProgram(programId);
         if (glGetProgrami(programId, GL_VALIDATE_STATUS) == 0) {
@@ -214,5 +222,9 @@ public class ShaderProgram {
         if (programId != 0) {
             glDeleteProgram(programId);
         }
+    }
+
+    public int getProgramId() {
+        return programId;
     }
 }

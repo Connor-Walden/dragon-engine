@@ -137,7 +137,11 @@ public class Window {
 
                     Application.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
 
-                    context.swapBuffers(camera, Application.getWorld());
+                    try {
+                        context.swapBuffers(camera, Application.getWorld());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 prevWidth = _width;
@@ -281,7 +285,7 @@ public class Window {
         glfwTerminate();
     }
 
-    public void tick(float delta) {
+    public void tick(float delta) throws Exception {
         // Poll the events and swap the buffers
         glfwPollEvents();
 

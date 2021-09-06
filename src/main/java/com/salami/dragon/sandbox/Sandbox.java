@@ -22,9 +22,6 @@ public class Sandbox implements IApplication, IListener {
     Cube cubeObject;
     Bunny bunnyObject;
 
-    AudioSource cubeAudioSource;
-    AudioSource bunnyAudioSource;
-
     public static void main(String[] args) throws Exception {
         player = new Player(new Camera());
 
@@ -38,19 +35,23 @@ public class Sandbox implements IApplication, IListener {
         cubeObject = new Cube().setScale(0.5f).setPosition(0, 0, -5);
         bunnyObject = new Bunny().setScale(0.5f).setPosition(2, 0, -5);
 
-        cubeAudioSource = new AudioSource(cubeObject.getCubeEntity(), "/audio/beep.ogg", true, true);
-        bunnyAudioSource = new AudioSource(bunnyObject.getBunnyEntity(), "/audio/fire.ogg", true, false);
+        cubeObject.addComponent(
+                Components.AUDIO_SOURCE,
+                new AudioSource(cubeObject.getCubeEntity(), "/audio/beep.ogg", true, false)
+        );
 
-        cubeObject.addComponent(Components.AUDIO_SOURCE, cubeAudioSource);
-        bunnyObject.addComponent(Components.AUDIO_SOURCE, bunnyAudioSource);
-
-        player.addComponent(Components.AUDIO_LISTENER, new AudioListener(player));
+        bunnyObject.addComponent(
+                Components.AUDIO_SOURCE,
+                new AudioSource(bunnyObject.getBunnyEntity(), "/audio/fire.ogg", true, false)
+        );
 
         // Application configuration phase
         Application.setCursorCaptured(true);
 
         Application.setWorld(new World());
         Application.getWorld().setDoDaylightCycle(true);
+//        Application.getWorld().setSkyBox(new SkyBox("/models/skybox.obj", "textures/skybox.png"));
+//        Application.getWorld().getSkyBox().setScale(500.0f);
 
         // Application registration phase
         Application.registerListeners(this, EventType.KEY_PRESS, EventType.MOUSE_MOVE, EventType.APPLICATION_STOP, EventType.COMPONENTS_INIT);
@@ -61,6 +62,7 @@ public class Sandbox implements IApplication, IListener {
     // delta - time in seconds since last frame.
     @Override
     public void tick(float delta) {
+        cubeObject.getCubeEntity().move(0.01f, 0, 0);
     }
 
     @Override
@@ -84,6 +86,18 @@ public class Sandbox implements IApplication, IListener {
         if(event.getEventType() == EventType.KEY_PRESS && key == Input.KEY_F3) {
             Application.setRenderMode(RenderMode.POINT);
         }
+
+        if(event.getEventType() == EventType.KEY_PRESS && key == Input.KEY_F4) {
+            AudioSource source = (AudioSource) cubeObject.getCubeEntity().getComponent(Components.AUDIO_SOURCE);
+
+            source.getSource().pause();
+        }
+
+        if(event.getEventType() == EventType.KEY_PRESS && key == Input.KEY_F5) {
+            AudioSource source = (AudioSource) cubeObject.getCubeEntity().getComponent(Components.AUDIO_SOURCE);
+
+            source.getSource().play();
+        }
     }
 
     @Override
@@ -101,8 +115,10 @@ public class Sandbox implements IApplication, IListener {
     @Override
     public void onComponentEvent(Event event) {
         if(event.getEventType() == EventType.COMPONENTS_INIT) {
-            cubeAudioSource.getSource().play();
-            bunnyAudioSource.getSource().play();
+            AudioSource cubeSource = (AudioSource) cubeObject.getCubeEntity().getComponent(Components.AUDIO_SOURCE);
+            AudioSource bunnySource = (AudioSource) bunnyObject.getBunnyEntity().getComponent(Components.AUDIO_SOURCE);
+            cubeSource.getSource().play();
+            bunnySource.getSource().play();
         }
     }
 }

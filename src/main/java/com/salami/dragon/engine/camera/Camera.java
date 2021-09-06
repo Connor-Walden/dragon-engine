@@ -1,6 +1,9 @@
 package com.salami.dragon.engine.camera;
 
+import com.salami.dragon.engine.Application;
+import com.salami.dragon.engine.render.GraphicsContext;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 public class Camera {
     private final Vector3f position;
@@ -53,5 +56,24 @@ public class Camera {
         rotation.x += offsetX;
         rotation.y += offsetY;
         rotation.z += offsetZ;
+    }
+
+    /**
+     * Compute the world direction vector based on the given X and Y coordinates
+     * in normalized-device space.
+     *
+     * @param x
+     *            the X coordinate within [-1..1]
+     * @param y
+     *            the Y coordinate within [-1..1]
+     */
+    public Vector3f getEyeRay(float x, float y) {
+        Vector4f tmp = new Vector4f(x, y, 0.0f, 1.0f);
+        GraphicsContext.getTransformation().getProjectionMatrix().transform(tmp);
+        tmp.mul(1.0f / tmp.w);
+        Vector3f tmp2 = new Vector3f(tmp.x, tmp.y, tmp.z);
+        tmp2.sub(position);
+
+        return tmp2;
     }
 }

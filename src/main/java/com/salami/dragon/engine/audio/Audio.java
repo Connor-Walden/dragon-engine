@@ -1,6 +1,7 @@
 package com.salami.dragon.engine.audio;
 
 import com.salami.dragon.engine.camera.Camera;
+import com.salami.dragon.engine.log.Logger;
 import com.salami.dragon.engine.render.GraphicsContext;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -30,12 +31,9 @@ public class Audio {
 
     private final Map<String, AudioSource_> audioSourceMap;
 
-    private final Matrix4f cameraMatrix;
-
     public Audio() {
         audioBufferList = new ArrayList<>();
         audioSourceMap = new HashMap<>();
-        cameraMatrix = new Matrix4f();
     }
 
     public void init() throws Exception {
@@ -83,18 +81,6 @@ public class Audio {
         this.listener = listener;
     }
 
-    public void updateListenerPosition(Camera camera) {
-        // Update camera matrix with camera data
-        GraphicsContext.getTransformation().updateViewMatrix(camera);
-
-        listener.setPosition(camera.getPosition());
-        Vector3f at = new Vector3f();
-        cameraMatrix.positiveZ(at).negate();
-        Vector3f up = new Vector3f();
-        cameraMatrix.positiveY(up);
-        listener.setOrientation(at, up);
-    }
-
     public void setAttenuationModel(int model) {
         alDistanceModel(model);
     }
@@ -111,11 +97,21 @@ public class Audio {
         audioBufferList.clear();
 
         if (context != NULL) {
+            try {
             alcDestroyContext(context);
+            } catch(Exception e) {
+                Logger.log_error("Could not destroy audio context :(");
+                e.printStackTrace();
+            }
         }
 
         if (device != NULL) {
-            alcCloseDevice(device);
+            try {
+                alcCloseDevice(device);
+            } catch(Exception e) {
+                Logger.log_error("Could not close device :(");
+                e.printStackTrace();
+            }
         }
     }
 }

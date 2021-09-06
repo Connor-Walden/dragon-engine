@@ -1,6 +1,7 @@
 package com.salami.dragon.engine.ecs.entity.prefab;
 
 import com.salami.dragon.engine.camera.Camera;
+import com.salami.dragon.engine.ecs.component.Components;
 import com.salami.dragon.engine.ecs.component.prefab.AudioListener;
 import com.salami.dragon.engine.ecs.component.prefab.FirstPersonCamera;
 import com.salami.dragon.engine.ecs.entity.Entity;
@@ -11,8 +12,8 @@ public class Player extends Entity {
     public Player(Camera camera) {
         this.camera = camera;
 
-        addComponent("FirstPersonCamera", new FirstPersonCamera(this.camera, false, this));
-        addComponent("AudioListener", new AudioListener(this));
+        addComponent(Components.FIRST_PERSON_CAMERA, new FirstPersonCamera(this.camera, false, this));
+        addComponent(Components.AUDIO_LISTENER, new AudioListener(this, camera));
     }
 
     public Camera getCamera() {

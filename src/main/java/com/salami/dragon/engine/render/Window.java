@@ -44,18 +44,11 @@ public class Window {
         this.app = app; // Needed for events.
         this.opts = opts;
 
-        // Events
-        Map<EventType, Event> eventMap = new HashMap<>();
-        eventMap.put(EventType.WINDOW_OPEN, new Event(EventType.WINDOW_OPEN));
-        eventMap.put(EventType.WINDOW_CLOSE, new Event(EventType.WINDOW_CLOSE));
-        eventMap.put(EventType.WINDOW_RESIZE, new Event(EventType.WINDOW_RESIZE));
-        eventMap.put(EventType.WINDOW_MOVE, new Event(EventType.WINDOW_MOVE));
-        eventMap.put(EventType.WINDOW_FOCUS, new Event(EventType.WINDOW_FOCUS));
-        eventMap.put(EventType.WINDOW_LOST_FOCUS, new Event(EventType.WINDOW_LOST_FOCUS));
-        eventMap.put(EventType.WINDOW_MAXIMIZE, new Event(EventType.WINDOW_MAXIMIZE));
-        eventMap.put(EventType.WINDOW_UN_MAXIMIZE, new Event(EventType.WINDOW_UN_MAXIMIZE));
-
-        Application.getEventGovernor().registerEvents(eventMap);
+        registerEvents(
+                EventType.WINDOW_OPEN, EventType.WINDOW_CLOSE, EventType.WINDOW_RESIZE,
+                EventType.WINDOW_MOVE, EventType.WINDOW_FOCUS, EventType.WINDOW_LOST_FOCUS,
+                EventType.WINDOW_MAXIMIZE, EventType.WINDOW_UN_MAXIMIZE
+        );
     }
 
     public void init() throws Exception {
@@ -97,10 +90,8 @@ public class Window {
         }
 
         boolean maximized = false;
-
         // If no size has been specified set it to maximized state
         if (width == 0 || height == 0) {
-
             // Set up a fixed width and height so window initialization does not fail
             width = 100;
             height = 100;
@@ -285,7 +276,6 @@ public class Window {
         context.cleanUp();
 
         glfwDestroyWindow(window);
-
         Application.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE);
 
         glfwTerminate();
@@ -295,40 +285,7 @@ public class Window {
         // Poll the events and swap the buffers
         glfwPollEvents();
 
-        if(Application.getWorld().getDoDaylightCycle())
-            dayCycleTimer += delta;
-
-        if(dayCycleTimer > Application.DAY_CYCLE_TIME) {
-            dayCycleTimer = 0;
-        }
-
-        float percentDayCycleComplete = dayCycleTimer / Application.DAY_CYCLE_TIME;
-
-        // Update directional light direction, intensity and colour
-
-        Application.getWorld().setSunAngle(360 * percentDayCycleComplete);
-
-        if (Application.getWorld().getSunAngle() > 90) {
-            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(0);
-            if (Application.getWorld().getSunAngle() >= 360) {
-                Application.getWorld().setSunAngle(-90);
-            }
-        } else if (Application.getWorld().getSunAngle() <= -80 || Application.getWorld().getSunAngle() >= 80) {
-            float factor = 1 - (float)(Math.abs(Application.getWorld().getSunAngle()) - 80)/ 10.0f;
-            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(factor);
-            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = Math.max(factor, 0.9f);
-            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = Math.max(factor, 0.5f);
-        } else {
-            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(1);
-            Application.getWorld().getWorldLight().getDirectionalLight().getColor().x = 1;
-            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = 1;
-            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = 1;
-        }
-
-        double angRad = Math.toRadians(Application.getWorld().getSunAngle());
-
-        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().x = (float) Math.sin(angRad);
-        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().y = (float) Math.cos(angRad);
+        daylightCycle(delta);
 
         context.swapBuffers(camera, Application.getWorld());
     }
@@ -367,13 +324,11 @@ public class Window {
     }
 
     public RenderMode getRenderMode() {
-        RenderMode tmp = switch (renderMode) {
+        return switch (renderMode) {
             case 1 -> RenderMode.LINE;
             case 2 -> RenderMode.POINT;
             default -> RenderMode.FILL;
         };
-
-        return tmp;
     }
 
     public void setRenderMode(RenderMode mode) {
@@ -415,5 +370,58 @@ public class Window {
         public boolean showFps;
 
         public boolean compatibleProfile;
+    }
+
+    private void registerEvents(EventType... events) {
+        // Events
+        Map<EventType, Event> eventMap = new HashMap<>();
+
+        for(EventType eventType : events) {
+            eventMap.put(eventType, new Event(eventType));
+        }
+
+        Application.getEventGovernor().registerEvents(eventMap);
+    }
+
+    private void daylightCycle(float delta) {
+
+        if(Application.getWorld().getDoDaylightCycle())
+            dayCycleTimer += delta;
+
+        if(dayCycleTimer > Application.DAY_CYCLE_TIME) {
+            dayCycleTimer = 0;
+        }
+
+        float percentDayCycleComplete = dayCycleTimer / Application.DAY_CYCLE_TIME;
+
+        // Update directional light direction, intensity and colour
+
+        Application.getWorld().setSunAngle(360 * percentDayCycleComplete);
+
+        if (Application.getWorld().getSunAngle() > 90) {
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(0);
+            if (Application.getWorld().getSunAngle() >= 360) {
+                Application.getWorld().setSunAngle(-90);
+            }
+        } else if (Application.getWorld().getSunAngle() <= -80 || Application.getWorld().getSunAngle() >= 80) {
+            float factor = 1 - (float)(Math.abs(Application.getWorld().getSunAngle()) - 80)/ 10.0f;
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(factor);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = Math.max(factor, 0.9f);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = Math.max(factor, 0.5f);
+        } else {
+            Application.getWorld().getWorldLight().getDirectionalLight().setIntensity(1);
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().x = 1;
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().y = 1;
+            Application.getWorld().getWorldLight().getDirectionalLight().getColor().z = 1;
+        }
+
+        double angRad = Math.toRadians(Application.getWorld().getSunAngle());
+
+        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().x = (float) Math.sin(angRad);
+        Application.getWorld().getWorldLight().getDirectionalLight().getDirection().y = (float) Math.cos(angRad);
+    }
+
+    public Camera getCamera() {
+        return camera;
     }
 }

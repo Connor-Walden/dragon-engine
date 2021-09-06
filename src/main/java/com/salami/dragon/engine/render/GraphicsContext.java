@@ -27,23 +27,20 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class GraphicsContext {
 
     private static final float FOV = (float) Math.toRadians(60.0f);
-
     private static final float Z_NEAR = 0.01f;
-
     private static final float Z_FAR = 1000.0f;
-
     private static final float SPECULAR_POWER = 10f;
 
     private static final int MAX_POINT_LIGHTS = 5;
-
     private static final int MAX_SPOT_LIGHTS = 5;
-
-    Window window;
 
     private ShaderProgram worldShaderProgram;
     private ShaderProgram hudShaderProgram;
     private ShaderProgram skyBoxShaderProgram;
-    static Transformation transformation;
+
+    private Window window;
+
+    private static Transformation transformation;
 
     public GraphicsContext(Window window) {
         this.window = window;
@@ -62,49 +59,23 @@ public class GraphicsContext {
     }
 
     private void setupWorldShader() throws Exception {
-        worldShaderProgram = new ShaderProgram();
-        worldShaderProgram.createVertexShader(Utils.loadResource("/shaders/vertex.glsl"));
-        worldShaderProgram.createFragmentShader(Utils.loadResource("/shaders/fragment.glsl"));
-        worldShaderProgram.link();
-
-        worldShaderProgram.createUniform("projectionMatrix");
-        worldShaderProgram.createUniform("modelViewMatrix");
-        worldShaderProgram.createUniform("texture_sampler");
+        worldShaderProgram = setupShaderProgram("/shaders/vertex.glsl", "/shaders/fragment.glsl");
+        createUniforms(worldShaderProgram,"projectionMatrix", "modelViewMatrix", "texture_sampler", "specularPower", "ambientLight");
 
         worldShaderProgram.createMaterialUniform("material");
-
-        worldShaderProgram.createUniform("specularPower");
-        worldShaderProgram.createUniform("ambientLight");
-
         worldShaderProgram.createPointLightListUniform("pointLights", MAX_POINT_LIGHTS);
         worldShaderProgram.createSpotLightListUniform("spotLights", MAX_SPOT_LIGHTS);
         worldShaderProgram.createDirectionalLightUniform("directionalLight");
     }
 
     private void setupHUDShader() throws Exception {
-        hudShaderProgram = new ShaderProgram();
-
-        hudShaderProgram.createVertexShader(Utils.loadResource("/shaders/hud_vertex.glsl"));
-        hudShaderProgram.createFragmentShader(Utils.loadResource("/shaders/hud_fragment.glsl"));
-        hudShaderProgram.link();
-
-        // Create uniforms for Ortographic-model projection matrix and base colour
-        hudShaderProgram.createUniform("projModelMatrix");
-        hudShaderProgram.createUniform("colour");
-        hudShaderProgram.createUniform("hasTexture");
+        hudShaderProgram = setupShaderProgram("/shaders/hud_vertex.glsl", "/shaders/hud_fragment.glsl");
+        createUniforms(hudShaderProgram, "projModelMatrix", "colour", "hasTexture");
     }
 
     private void setupSkyboxShader() throws Exception {
-        skyBoxShaderProgram = new ShaderProgram();
-
-        skyBoxShaderProgram.createVertexShader(Utils.loadResource("/shaders/sb_vertex.glsl"));
-        skyBoxShaderProgram.createFragmentShader(Utils.loadResource("/shaders/sb_fragment.glsl"));
-        skyBoxShaderProgram.link();
-
-        skyBoxShaderProgram.createUniform("projectionMatrix");
-        skyBoxShaderProgram.createUniform("modelViewMatrix");
-        skyBoxShaderProgram.createUniform("texture_sampler");
-        skyBoxShaderProgram.createUniform("ambientLight");
+        skyBoxShaderProgram = setupShaderProgram("/shaders/sb_vertex.glsl", "/shaders/sb_fragment.glsl");
+        createUniforms(skyBoxShaderProgram, "projectionMatrix", "modelViewMatrix", "texture_sampler", "ambientLight");
     }
 
     public void clear() {
@@ -139,13 +110,14 @@ public class GraphicsContext {
         Map<Mesh, List<Entity>> mapMeshes = world.getGameMeshes();
 
         for (Mesh mesh : mapMeshes.keySet()) {
-            worldShaderProgram.setUniform("material", mesh.getMaterial());
-            mesh.renderList(mapMeshes.get(mesh), (Entity entity) -> {
-                Matrix4f modelViewMatrix = transformation.buildModelViewMatrix(entity, viewMatrix);
-                worldShaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
-            });
+            if(mesh != null) {
+                worldShaderProgram.setUniform("material", mesh.getMaterial());
+                mesh.renderList(mapMeshes.get(mesh), (Entity entity) -> {
+                    Matrix4f modelViewMatrix = transformation.buildModelViewMatrix(entity, viewMatrix);
+                    worldShaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+                });
+            }
         }
-
 
         worldShaderProgram.unbind();
     }
@@ -240,5 +212,22 @@ public class GraphicsContext {
 
     public static Transformation getTransformation() {
         return transformation;
+    }
+
+    // Create all of the uniforms for a shader program in one call!
+    private void createUniforms(ShaderProgram sp, String... uniforms) throws Exception {
+        for(String uniform : uniforms) {
+            sp.createUniform(uniform);
+        }
+    }
+
+    // sets up the shader to be used by this graphics context
+    private ShaderProgram setupShaderProgram(String vertexLocation, String fragmentLocation) throws Exception {
+        ShaderProgram shaderProgram = new ShaderProgram();
+        shaderProgram.createVertexShader(Utils.loadResource(vertexLocation));
+        shaderProgram.createFragmentShader(Utils.loadResource(fragmentLocation));
+        shaderProgram.link();
+
+        return shaderProgram;
     }
 }

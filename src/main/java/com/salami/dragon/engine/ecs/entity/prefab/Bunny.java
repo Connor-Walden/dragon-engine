@@ -1,5 +1,6 @@
 package com.salami.dragon.engine.ecs.entity.prefab;
 
+import com.salami.dragon.engine.ecs.component.IComponent;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.render.Material;
 import com.salami.dragon.engine.render.mesh.Mesh;
@@ -31,5 +32,9 @@ public class Bunny {
 
     public Entity getBunnyEntity() {
         return bunnyEntity;
+    }
+
+    public void addComponent(String name, IComponent component) {
+        bunnyEntity.addComponent(name, component);
     }
 }

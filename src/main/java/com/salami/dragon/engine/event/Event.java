@@ -25,6 +25,14 @@ public class Event {
         }
     }
 
+    public void fireComponentEvent() {
+        if(eventType == COMPONENTS_INIT || eventType == COMPONENTS_TICK) {
+            for(IListener listener : listeners) {
+                listener.onComponentEvent(this);
+            }
+        }
+    }
+
     public void fireKeyEvent(int key) {
         if(eventType == EventType.KEY_PRESS || eventType == EventType.KEY_RELEASE || eventType == EventType.MOUSE_BUTTON_PRESS || eventType == EventType.MOUSE_BUTTON_RELEASE) {
             for(IListener listener : listeners) {

@@ -1,8 +1,14 @@
 package com.salami.dragon.engine;
 
+import com.salami.dragon.engine.audio.Audio;
+import com.salami.dragon.engine.audio.AudioBuffer;
+import com.salami.dragon.engine.audio.AudioSource_;
+import com.salami.dragon.engine.ecs.component.IComponent;
+import com.salami.dragon.engine.ecs.component.prefab.AudioListener;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.event.Event;
+import com.salami.dragon.engine.log.Logger;
 import com.salami.dragon.engine.render.RenderMode;
 import com.salami.dragon.engine.render.Window;
 
@@ -10,6 +16,7 @@ import java.util.*;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.openal.AL11.AL_EXPONENT_DISTANCE;
 
 public class Application {
     public static final int DAY_CYCLE_TIME = 600;// In seconds
@@ -23,6 +30,7 @@ public class Application {
     private final List<Entity> entities;
 
     World world;
+    Audio audio;
 
     private Application(IApplication app) throws Exception {
         this.app = app;
@@ -51,7 +59,8 @@ public class Application {
         eventMap.put(EventType.APPLICATION_STOP, new Event(EventType.APPLICATION_STOP));
         eventMap.put(EventType.APPLICATION_INIT, new Event(EventType.APPLICATION_INIT));
         eventMap.put(EventType.APPLICATION_TICK, new Event(EventType.APPLICATION_TICK));
-
+        eventMap.put(EventType.COMPONENTS_INIT, new Event(EventType.COMPONENTS_INIT));
+        eventMap.put(EventType.COMPONENTS_TICK, new Event(EventType.COMPONENTS_TICK));
         this.eventGovernor.registerEvents(eventMap);
     }
 
@@ -67,13 +76,44 @@ public class Application {
         }
     }
 
+    public static void registerAudio(Entity listener) throws Exception {
+        instance.audio = new Audio();
+        instance.audio.init();
+        instance.audio.setAttenuationModel(AL_EXPONENT_DISTANCE);
+
+        AudioListener audioListenerComponent = (AudioListener) listener.getComponent("AudioListener");
+        instance.audio.setListener(audioListenerComponent.getSource());
+    }
+
+    public static Audio getAudio() {
+        return instance.audio;
+    }
+
+    public static AudioSource_ createAudioSource(String filePath, boolean loop, boolean relative) throws Exception {
+        AudioBuffer buff = new AudioBuffer(filePath);
+        instance.audio.addAudioBuffer(buff);
+        AudioSource_ source = new AudioSource_(loop, relative);
+        instance.audio.addAudioSource("AudioSource(" + filePath + ")", source);
+        source.setBuffer(buff.getBufferId());
+
+        return source;
+    }
+
     public static void registerEntity(Entity entity) {
         instance.entities.add(entity);
         getWorld().setEntities(instance.getEntities());
     }
 
+    public static void registerEntities(Entity... entities) {
+        for(Entity entity : entities) {
+            registerEntity(entity);
+        }
+    }
+
     public void start() throws Exception {
         this.eventGovernor.fireEvent(EventType.APPLICATION_START);
+
+        Logger.log_highlight("Hello from Dragon game engine!");
 
         // Follow application flow by initialising and going into tick()
         init();
@@ -83,16 +123,27 @@ public class Application {
     public static void stop() {
         getEventGovernor().fireEvent(EventType.APPLICATION_STOP);
 
-        // Destroy the window
-        instance.getWindow().invalidateWindow();
+        getAudio().cleanup();
 
+        // Destroy the window
+        getWindow().invalidateWindow();
     }
 
     public void init() throws Exception {
         window.init();
         app.init();
 
-        this.eventGovernor.fireEvent(EventType.APPLICATION_INIT);
+        for(Entity entity : entities) {
+            List<IComponent> componentList = entity.getComponents();
+
+            for(IComponent component : componentList) {
+                component.init();
+            }
+
+        }
+
+        eventGovernor.fireEvent(EventType.COMPONENTS_INIT);
+        eventGovernor.fireEvent(EventType.APPLICATION_INIT);
     }
 
     public void tick() {
@@ -109,8 +160,17 @@ public class Application {
             app.tick(delta);
             window.tick(delta);
 
+            for(Entity entity : entities) {
+                List<IComponent> componentList = entity.getComponents();
+
+                for(IComponent component : componentList) {
+                    component.tick(delta);
+                }
+            }
+
             getWorld().getSkyBox().setPosition(app.CAMERA().getPosition().x, app.CAMERA().getPosition().y, app.CAMERA().getPosition().z);
 
+            eventGovernor.fireEvent(EventType.COMPONENTS_TICK);
             this.eventGovernor.fireEvent(EventType.APPLICATION_TICK);
         }
 
@@ -129,24 +189,24 @@ public class Application {
 
     public static void setCursorCaptured(boolean captured) {
         if(captured) {
-            glfwSetInputMode(instance.getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetInputMode(getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             setCursor(0, 0);
         } else {
-            glfwSetInputMode(instance.getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            glfwSetInputMode(getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             centreCursor();
         }
     }
 
     public static void centreCursor() {
-        glfwSetCursorPos(instance.getWindow().getGLFWWindow(), instance.getWindow().getWidth() / 2f, instance.getWindow().getHeight() / 2f);
+        glfwSetCursorPos(getWindow().getGLFWWindow(), getWindow().getWidth() / 2f, getWindow().getHeight() / 2f);
     }
 
     public static void setCursor(float xPos, float yPos) {
-        glfwSetCursorPos(instance.getWindow().getGLFWWindow(), xPos, yPos);
+        glfwSetCursorPos(getWindow().getGLFWWindow(), xPos, yPos);
     }
 
     public static void setRenderMode(RenderMode renderMode) {
-        instance.getWindow().setRenderMode(renderMode);
+        getWindow().setRenderMode(renderMode);
     }
 
     public static void setWorld(World world) {
@@ -158,14 +218,14 @@ public class Application {
     }
 
     public static void maximizeWindow() {
-        glfwMaximizeWindow(instance.getWindow().getGLFWWindow());
+        glfwMaximizeWindow(getWindow().getGLFWWindow());
     }
 
     public static EventGovernor getEventGovernor() {
         return instance.eventGovernor;
     }
 
-    public Window getWindow() {
-        return window;
+    public static Window getWindow() {
+        return instance.window;
     }
 }

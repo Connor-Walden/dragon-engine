@@ -22,15 +22,18 @@ public class World {
     public World() throws Exception {
         meshMap = new HashMap<>();
 
+        setupWorldLight();
+
+        skyBox = new SkyBox("/models/skybox.obj", "textures/skybox.png");
+        skyBox.setScale(500.0f);
+    }
+
+    private void setupWorldLight() {
         worldLight = new WorldLight();
         worldLight.setAmbientLight(new Vector3f(0.15f, 0.15f, 0.15f));
         worldLight.setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), new Vector3f(0, -1, 0), 1.0f));
         worldLight.setSkyBoxLight(new Vector3f(1.0f, 1.0f, 1.0f));
-
         sunAngle = 0.0f;
-
-        skyBox = new SkyBox("/models/skybox.obj", "textures/skybox.png");
-        skyBox.setScale(500.0f);
     }
 
     public Map<Mesh, List<Entity>> getGameMeshes() {

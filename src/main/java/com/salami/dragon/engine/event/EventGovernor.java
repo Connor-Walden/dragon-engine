@@ -20,6 +20,7 @@ public class EventGovernor {
         // Will only fire the right event as there is in-built validation for this.
         eventToFire.fireEngineEvent();
         eventToFire.fireAudioEvent();
+        eventToFire.fireComponentEvent();
     }
 
     public void fireEvent(EventType name, int key) {

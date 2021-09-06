@@ -1,5 +1,6 @@
 package com.salami.dragon.engine.ecs.entity.prefab;
 
+import com.salami.dragon.engine.ecs.component.IComponent;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.render.Material;
 import com.salami.dragon.engine.render.mesh.Mesh;
@@ -35,5 +36,9 @@ public class Cube {
 
     public Entity getCubeEntity() {
         return cubeEntity;
+    }
+
+    public void addComponent(String name, IComponent component) {
+        cubeEntity.addComponent(name, component);
     }
 }

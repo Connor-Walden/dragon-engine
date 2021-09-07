@@ -1,10 +1,6 @@
 package com.salami.dragon.engine.audio;
 
-import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.log.Logger;
-import com.salami.dragon.engine.render.GraphicsContext;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.ALC;
 import org.lwjgl.openal.ALCCapabilities;

@@ -1,9 +1,6 @@
 package com.salami.dragon.engine.ecs.entity;
 
-import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.ecs.component.IComponent;
-import com.salami.dragon.engine.event.Event;
-import com.salami.dragon.engine.event.EventType;
 import com.salami.dragon.engine.render.mesh.Mesh;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -88,6 +85,10 @@ public class Entity {
 
     public void addComponent(String componentName, IComponent component) {
         componentList.put(componentName, component);
+    }
+
+    public void cleanUp() {
+        clearComponents();
     }
 
     public void removeComponent(String componentName) {

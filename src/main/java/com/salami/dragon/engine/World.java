@@ -6,6 +6,7 @@ import com.salami.dragon.engine.light.DirectionalLight;
 import com.salami.dragon.engine.light.WorldLight;
 import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.mesh.Mesh;
+import com.salami.dragon.engine.render.particle.IParticleEmitter;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -15,10 +16,14 @@ import java.util.Map;
 
 public class World {
     private final Map<Mesh, List<Entity>> meshMap;
+    private IParticleEmitter[] particleEmitters;
+
     private SkyBox skyBox;
     private WorldLight worldLight;
+
     float sunAngle;
     boolean doDaylightCycle = true;
+
     Fog fog;
 
     public World() throws Exception {
@@ -102,5 +107,13 @@ public class World {
 
     public void setDoDaylightCycle(boolean doDaylightCycle) {
         this.doDaylightCycle = doDaylightCycle;
+    }
+
+    public IParticleEmitter[] getParticleEmitters() {
+        return particleEmitters;
+    }
+
+    public void setParticleEmitters(IParticleEmitter[] newArr) {
+        particleEmitters = newArr;
     }
 }

@@ -1,7 +1,6 @@
 package com.salami.dragon.engine.camera;
 
-import com.salami.dragon.engine.Application;
-import com.salami.dragon.engine.render.GraphicsContext;
+import com.salami.dragon.engine.render.context.GraphicsContext;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 

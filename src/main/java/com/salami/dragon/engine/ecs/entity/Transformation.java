@@ -94,6 +94,16 @@ public class Transformation {
         return ortho2DMatrix;
     }
 
+    public Matrix4f buildModelMatrix(Entity entity) {
+        Quaternionf rotation = entity.getRotation();
+        modelMatrix.identity().translate(entity.getPosition()).
+                rotateX((float)Math.toRadians(-rotation.x)).
+                rotateY((float)Math.toRadians(-rotation.y)).
+                rotateZ((float)Math.toRadians(-rotation.z)).
+                scale(entity.getScale());
+        return modelMatrix;
+    }
+
     public Matrix4f buildModelViewMatrix(Entity entity, Matrix4f matrix) {
         Quaternionf rotation = entity.getRotation();
         modelMatrix.identity().translate(entity.getPosition()).
@@ -102,6 +112,11 @@ public class Transformation {
                 rotateZ((float)Math.toRadians(-rotation.z)).
                 scale(entity.getScale());
         modelViewMatrix.set(matrix);
+        return modelViewMatrix.mul(modelMatrix);
+    }
+
+    public Matrix4f buildModelViewMatrix(Matrix4f modelMatrix, Matrix4f viewMatrix) {
+        modelViewMatrix.set(viewMatrix);
         return modelViewMatrix.mul(modelMatrix);
     }
 

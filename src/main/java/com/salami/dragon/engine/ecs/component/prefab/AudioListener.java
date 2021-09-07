@@ -4,7 +4,7 @@ import com.salami.dragon.engine.audio.AudioListener_;
 import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.ecs.component.IComponent;
 import com.salami.dragon.engine.ecs.entity.Entity;
-import com.salami.dragon.engine.render.GraphicsContext;
+import com.salami.dragon.engine.render.context.GraphicsContext;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 

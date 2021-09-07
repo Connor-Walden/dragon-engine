@@ -8,9 +8,7 @@ import com.salami.dragon.engine.ecs.entity.prefab.*;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.input.Input;
 import com.salami.dragon.engine.render.*;
-import com.salami.dragon.engine.render.mesh.Mesh;
 import com.salami.dragon.engine.render.particle.FlowParticleEmitter;
-import com.salami.dragon.engine.render.texture.Texture;
 import org.joml.Vector3f;
 
 public class Sandbox implements IApplication, IListener {
@@ -55,26 +53,23 @@ public class Sandbox implements IApplication, IListener {
         int maxParticles = 200;
         long creationPeriodMillis = 300;
         float range = 0.2f;
-        float scale = 0.5f;
-
-        Mesh partMesh = OBJLoader.loadMesh("/models/particle.obj");
-        Texture texture = new Texture("textures/particle_tmp.png");
-        Material partMaterial = new Material(texture, 1.0f);
-        partMesh.setMaterial(partMaterial);
-        Particle particle = new Particle(partMesh, particleSpeed, ttl);
-        particle.setScale(scale);
-
-        FlowParticleEmitter particleEmitter = new FlowParticleEmitter(particle, maxParticles, creationPeriodMillis);
-        particleEmitter.setActive(true);
-        particleEmitter.setPositionRndRange(range);
-        particleEmitter.setSpeedRndRange(range);
 
         // Application configuration phase
         Application.setCursorCaptured(true);
 
         Application.setWorld(new World());
         Application.getWorld().setDoDaylightCycle(false);
-        Application.getWorld().setParticleEmitters(new FlowParticleEmitter[] { particleEmitter });
+        Application.getWorld().setParticleEmitters(new FlowParticleEmitter[] {
+            FlowParticleEmitter.createEmitter(
+                "/models/particle.obj",
+                "textures/particle_tmp.png",
+                particleSpeed,
+                ttl,
+                maxParticles,
+                creationPeriodMillis,
+                range
+            )
+        });
 
         // Application registration phase
         Application.registerListeners(this, EventType.KEY_PRESS, EventType.MOUSE_MOVE, EventType.APPLICATION_STOP, EventType.COMPONENTS_INIT);

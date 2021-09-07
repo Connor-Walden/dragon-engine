@@ -2,8 +2,13 @@ package com.salami.dragon.engine.render.particle;
 
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.ecs.entity.prefab.Particle;
+import com.salami.dragon.engine.render.Material;
+import com.salami.dragon.engine.render.OBJLoader;
+import com.salami.dragon.engine.render.mesh.Mesh;
+import com.salami.dragon.engine.render.texture.Texture;
 import org.joml.Vector3f;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +35,21 @@ public class FlowParticleEmitter implements IParticleEmitter {
         this.active = false;
         this.lastCreationTime = 0;
         this.creationPeriodMillis = creationPeriodMillis;
+    }
+
+    public static FlowParticleEmitter createEmitter(String objLocation, String texLocation, Vector3f particleSpeed, long ttl, int maxParticles, long creationPeriodMillis, float range) throws Exception {
+        Mesh partMesh = OBJLoader.loadMesh(objLocation);
+        Texture texture = new Texture(texLocation);
+        Material partMaterial = new Material(texture, 1.0f);
+        partMesh.setMaterial(partMaterial);
+        Particle particle = new Particle(partMesh, particleSpeed, ttl);
+
+        FlowParticleEmitter particleEmitter = new FlowParticleEmitter(particle, maxParticles, creationPeriodMillis);
+        particleEmitter.setActive(true);
+        particleEmitter.setPositionRndRange(range);
+        particleEmitter.setSpeedRndRange(range);
+
+        return particleEmitter;
     }
 
     @Override

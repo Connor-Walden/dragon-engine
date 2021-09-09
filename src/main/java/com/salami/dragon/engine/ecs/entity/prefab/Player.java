@@ -19,4 +19,14 @@ public class Player extends Entity {
     public Camera getCamera() {
         return camera;
     }
+
+    public void suspendControls() {
+        FirstPersonCamera fpc = (FirstPersonCamera) getComponent(Components.FIRST_PERSON_CAMERA);
+        fpc.setDoControls(false);
+    }
+
+    public void reinstateControls() {
+        FirstPersonCamera fpc = (FirstPersonCamera) getComponent(Components.FIRST_PERSON_CAMERA);
+        fpc.setDoControls(true);
+    }
 }

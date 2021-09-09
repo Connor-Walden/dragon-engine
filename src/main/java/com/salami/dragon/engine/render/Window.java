@@ -3,9 +3,11 @@ package com.salami.dragon.engine.render;
 import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.camera.Camera;
 import com.salami.dragon.engine.event.Event;
+import com.salami.dragon.engine.event.EventTime;
 import com.salami.dragon.engine.event.EventType;
 import com.salami.dragon.engine.input.Input;
 import com.salami.dragon.engine.render.context.GraphicsContext;
+import com.salami.dragon.engine.render.ui.IUiLayer;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
@@ -21,6 +23,7 @@ public class Window {
     private final Application app;
     private Camera camera;
     private WindowOptions opts;
+    private IUiLayer uiLayer;
 
     private final String title;
 
@@ -29,22 +32,20 @@ public class Window {
     private int renderMode = 0; // 0 - fill, 1 - line, 2 - point
     private int prevXPos, prevYPos, prevWidth, prevHeight;
 
-    private long windowHandle;
     private long window;
-
-    private boolean resized;
     private boolean vSync;
-
     private float dayCycleTimer = 0.0f;
 
-    public Window(Application app, int width, int height, String title, Camera camera, WindowOptions opts) {
+    public Window(Application app, int width, int height, String title, Camera camera, WindowOptions opts, IUiLayer uiLayer) {
         this.camera = camera;
         this.width = width;
         this.height = height;
         this.title = title;
         this.app = app; // Needed for events.
         this.opts = opts;
+        this.uiLayer = uiLayer;
 
+        // Setup before and after events for the window.
         registerEvents(
                 EventType.WINDOW_OPEN, EventType.WINDOW_CLOSE, EventType.WINDOW_RESIZE,
                 EventType.WINDOW_MOVE, EventType.WINDOW_FOCUS, EventType.WINDOW_LOST_FOCUS,
@@ -53,7 +54,7 @@ public class Window {
     }
 
     public void init() throws Exception {
-        Input.init(app);
+        Input.init();
 
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -63,8 +64,11 @@ public class Window {
             System.exit(1);
         }
 
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_OPEN, EventTime.BEFORE_EVENT);
+
         window = glfwCreateWindow(width, height, title, NULL, NULL);
-        Application.getEventGovernor().fireEvent(EventType.WINDOW_OPEN);
+
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_OPEN, EventTime.AFTER_EVENT);
 
         centreWindow();
 
@@ -73,7 +77,6 @@ public class Window {
             System.err.println("Error creating a window");
             System.exit(1);
         }
-
 
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GL_FALSE); // the window will stay hidden after creation
@@ -88,6 +91,10 @@ public class Window {
         } else {
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        }
+
+        if (opts.antialiasing) {
+            glfwWindowHint(GLFW_SAMPLES, 4);
         }
 
         boolean maximized = false;
@@ -134,11 +141,15 @@ public class Window {
         glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback(){
             @Override public void invoke(long window, int _width, int _height){
                 if(prevWidth != _width || prevHeight != _height) {
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
                     glViewport(0, 0, _width, _height);
 
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_RESIZE, EventTime.AFTER_EVENT);
 
                     try {
+                        // Re-render to update the screen while dragging of the window is occuring
                         context.swapBuffers(camera, Application.getWorld());
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -153,7 +164,11 @@ public class Window {
         glfwSetWindowPosCallback(window, new GLFWWindowPosCallback() {
             @Override public void invoke(long window, int xpos, int ypos) {
                 if(xpos != prevXPos || ypos != prevYPos) {
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MOVE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MOVE, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
+
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MOVE, EventTime.AFTER_EVENT);
                 }
 
                 prevXPos = xpos;
@@ -165,9 +180,17 @@ public class Window {
             @Override
             public void invoke(long window, boolean focused) {
                 if(focused) {
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_FOCUS);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_FOCUS, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
+
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_FOCUS, EventTime.AFTER_EVENT);
                 } else {
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_LOST_FOCUS);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_LOST_FOCUS, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
+
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_LOST_FOCUS, EventTime.AFTER_EVENT);
                 }
             }
         });
@@ -176,9 +199,17 @@ public class Window {
             @Override
             public void invoke(long window, boolean maximized) {
                 if(maximized) {
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
+
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_MAXIMIZE, EventTime.AFTER_EVENT);
                 } else {
-                    Application.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE);
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE, EventTime.BEFORE_EVENT);
+
+                    // ANY ENGINE STUFF RELATED TO THIS GOES HERE
+
+                    Application.getEventGovernor().fireEvent(EventType.WINDOW_UN_MAXIMIZE, EventTime.AFTER_EVENT);
                 }
             }
         });
@@ -278,10 +309,12 @@ public class Window {
     }
 
     public void terminate() {
-        context.cleanUp();
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE, EventTime.BEFORE_EVENT);
 
+        context.cleanUp();
         glfwDestroyWindow(window);
-        Application.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE);
+
+        Application.getEventGovernor().fireEvent(EventType.WINDOW_CLOSE, EventTime.AFTER_EVENT);
 
         glfwTerminate();
     }
@@ -374,18 +407,37 @@ public class Window {
 
         public boolean showFps;
 
+        public boolean antialiasing;
+
         public boolean compatibleProfile;
     }
 
-    private void registerEvents(EventType... events) {
+    private void registerBeforeEvents(EventType... events) {
         // Events
         Map<EventType, Event> eventMap = new HashMap<>();
 
         for(EventType eventType : events) {
-            eventMap.put(eventType, new Event(eventType));
+            eventMap.put(eventType, new Event(eventType, EventTime.BEFORE_EVENT));
         }
 
         Application.getEventGovernor().registerEvents(eventMap);
+    }
+
+    private void registerAfterEvents(EventType... events) {
+        // Events
+        Map<EventType, Event> eventMap = new HashMap<>();
+
+        for(EventType eventType : events) {
+            eventMap.put(eventType, new Event(eventType, EventTime.AFTER_EVENT));
+        }
+
+        Application.getEventGovernor().registerEvents(eventMap);
+    }
+
+    // This will register both before and after events
+    private void registerEvents(EventType... events) {
+        registerBeforeEvents(events);
+        registerAfterEvents(events);
     }
 
     private void daylightCycle(float delta) {
@@ -428,5 +480,18 @@ public class Window {
 
     public Camera getCamera() {
         return camera;
+    }
+
+    public IUiLayer getUiLayer() {
+        return uiLayer;
+    }
+
+    public void restoreState() {
+        glEnable(GL_DEPTH_TEST);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        if (opts.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
     }
 }

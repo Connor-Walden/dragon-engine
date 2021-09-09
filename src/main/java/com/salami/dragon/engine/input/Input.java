@@ -2,6 +2,7 @@ package com.salami.dragon.engine.input;
 
 import com.salami.dragon.engine.Application;
 import com.salami.dragon.engine.event.Event;
+import com.salami.dragon.engine.event.EventTime;
 import com.salami.dragon.engine.event.EventType;
 
 import java.util.*;
@@ -11,8 +12,6 @@ import static org.lwjgl.glfw.GLFW.*;
 public class Input {
     private static List<Integer> keysHeld;
     private static List<Integer> mouseButtonsHeld;
-
-    private static Application app;
 
     private static double mouseX, mouseY;
 
@@ -63,59 +62,79 @@ public class Input {
     public static final int KEY_F11 = GLFW_KEY_F11;
     public static final int KEY_F12 = GLFW_KEY_F12;
 
-    public static void init(Application _app) {
+    public static void init() {
         keysHeld = new ArrayList<>();
         mouseButtonsHeld = new ArrayList<>();
 
-        app = _app;
-
         Map<EventType, Event> eventMap = new HashMap<>();
-        eventMap.put(EventType.KEY_PRESS, new Event(EventType.KEY_PRESS));
-        eventMap.put(EventType.KEY_RELEASE, new Event(EventType.KEY_RELEASE));
-        eventMap.put(EventType.MOUSE_BUTTON_PRESS, new Event(EventType.MOUSE_BUTTON_PRESS));
-        eventMap.put(EventType.MOUSE_BUTTON_RELEASE, new Event(EventType.MOUSE_BUTTON_RELEASE));
-        eventMap.put(EventType.MOUSE_MOVE, new Event(EventType.MOUSE_MOVE));
-        eventMap.put(EventType.MOUSE_SCROLL, new Event(EventType.MOUSE_SCROLL));
 
-        app.getEventGovernor().registerEvents(eventMap);
+        eventMap.put(EventType.KEY_PRESS, new Event(EventType.KEY_PRESS, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.KEY_RELEASE, new Event(EventType.KEY_RELEASE, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.MOUSE_BUTTON_PRESS, new Event(EventType.MOUSE_BUTTON_PRESS, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.MOUSE_BUTTON_RELEASE, new Event(EventType.MOUSE_BUTTON_RELEASE, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.MOUSE_MOVE, new Event(EventType.MOUSE_MOVE, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.MOUSE_SCROLL, new Event(EventType.MOUSE_SCROLL, EventTime.BEFORE_EVENT));
+
+        // Register before events
+        Application.getEventGovernor().registerEvents(eventMap);
+        eventMap = new HashMap<>();
+
+        eventMap.put(EventType.KEY_PRESS, new Event(EventType.KEY_PRESS, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.KEY_RELEASE, new Event(EventType.KEY_RELEASE, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.MOUSE_BUTTON_PRESS, new Event(EventType.MOUSE_BUTTON_PRESS, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.MOUSE_BUTTON_RELEASE, new Event(EventType.MOUSE_BUTTON_RELEASE, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.MOUSE_MOVE, new Event(EventType.MOUSE_MOVE, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.MOUSE_SCROLL, new Event(EventType.MOUSE_SCROLL, EventTime.AFTER_EVENT));
+
+        // Register after events
+        Application.getEventGovernor().registerEvents(eventMap);
     }
 
     public static void onKeyPress(int key) {
+        Application.getEventGovernor().fireEvent(EventType.KEY_PRESS, EventTime.BEFORE_EVENT, key);
+
         keysHeld.add(key);
 
-        app.getEventGovernor().fireEvent(EventType.KEY_PRESS, key);
+        Application.getEventGovernor().fireEvent(EventType.KEY_PRESS, EventTime.AFTER_EVENT, key);
     }
 
     public static void onKeyRelease(int key) {
-        keysHeld.remove(keysHeld.indexOf(key));
+        Application.getEventGovernor().fireEvent(EventType.KEY_RELEASE, EventTime.BEFORE_EVENT, key);
 
-        app.getEventGovernor().fireEvent(EventType.KEY_RELEASE, key);
+        keysHeld.remove((Integer) key);
+
+        Application.getEventGovernor().fireEvent(EventType.KEY_RELEASE, EventTime.AFTER_EVENT, key);
     }
 
     public static void onMouseMove(double xPos, double yPos) {
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_MOVE, EventTime.BEFORE_EVENT, xPos, yPos);
+
         mouseX = xPos;
         mouseY = yPos;
 
-        app.getEventGovernor().fireEvent(EventType.MOUSE_MOVE, xPos, yPos);
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_MOVE, EventTime.AFTER_EVENT, xPos, yPos);
     }
 
     public static void onMouseButtonPress(int button) {
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_PRESS, EventTime.BEFORE_EVENT, button);
+
         mouseButtonsHeld.add(button);
 
-        app.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_PRESS, button);
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_PRESS, EventTime.AFTER_EVENT, button);
     }
 
     public static void onMouseButtonRelease(int button) {
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_RELEASE, EventTime.BEFORE_EVENT, button);
 
-        if(mouseButtonsHeld.contains(button)) {
-            mouseButtonsHeld.remove(mouseButtonsHeld.indexOf(button));
+        if(mouseButtonsHeld.contains(button))
+            mouseButtonsHeld.remove((Integer) button);
 
-            app.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_RELEASE, button);
-        }
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_BUTTON_RELEASE, EventTime.AFTER_EVENT, button);
     }
 
     public static void onMouseScroll(double amount) {
-        app.getEventGovernor().fireEvent(EventType.MOUSE_SCROLL, amount);
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_SCROLL, EventTime.BEFORE_EVENT, amount);
+        Application.getEventGovernor().fireEvent(EventType.MOUSE_SCROLL, EventTime.AFTER_EVENT, amount);
     }
 
     public static double getMouseX() {

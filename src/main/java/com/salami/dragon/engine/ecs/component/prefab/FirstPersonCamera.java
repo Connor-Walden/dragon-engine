@@ -23,6 +23,8 @@ public class FirstPersonCamera implements IComponent, IListener {
 
     Camera camera;
 
+    boolean doControls = true;
+
     Entity parent;
     boolean glow = false;
 
@@ -84,6 +86,10 @@ public class FirstPersonCamera implements IComponent, IListener {
         return camera;
     }
 
+    public void setDoControls(boolean doControls) {
+        this.doControls = doControls;
+    }
+
     @Override
     public void init() {
         Application.getEventGovernor().registerListeners(this, EventType.MOUSE_MOVE);
@@ -108,11 +114,13 @@ public class FirstPersonCamera implements IComponent, IListener {
 
     @Override
     public void tick(float delta) {
-        movePlayer();
-        rotateCamera();
+        if (doControls) {
+            movePlayer();
+            rotateCamera();
 
-        parent.setPosition(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-        playerLight.setPosition(parent.getPosition());
+            parent.setPosition(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
+            playerLight.setPosition(parent.getPosition());
+        }
     }
 
     @Override

@@ -105,7 +105,7 @@ public class FontTexture {
             buf.put(data, 0, data.length);
             buf.flip();
         }
-        texture = new Texture(buf, width, height);
+        texture = new Texture(buf);
     }
 
     public static class CharInfo {

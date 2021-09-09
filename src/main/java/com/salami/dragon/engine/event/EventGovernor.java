@@ -14,31 +14,31 @@ public class EventGovernor {
         }
     }
 
-    public void fireEvent(EventType name) {
+    public void fireEvent(EventType name, String eventTime) {
         Event eventToFire = eventMap.get(name);
 
         // Will only fire the right event as there is in-built validation for this.
-        eventToFire.fireEngineEvent();
-        eventToFire.fireAudioEvent();
-        eventToFire.fireComponentEvent();
+        eventToFire.fireEngineEvent(eventTime);
+        eventToFire.fireAudioEvent(eventTime);
+        eventToFire.fireComponentEvent(eventTime);
     }
 
-    public void fireEvent(EventType name, int key) {
+    public void fireEvent(EventType name, String eventTime, int key) {
         Event eventToFire = eventMap.get(name);
 
-        eventToFire.fireKeyEvent(key);
+        eventToFire.fireKeyEvent(eventTime, key);
     }
 
-    public void fireEvent(EventType name, double xPos, double yPos) {
+    public void fireEvent(EventType name, String eventTime, double xPos, double yPos) {
         Event eventToFire = eventMap.get(name);
 
-        eventToFire.fireMouseMoveEvent(xPos, yPos);
+        eventToFire.fireMouseMoveEvent(eventTime, xPos, yPos);
     }
 
-    public void fireEvent(EventType name, double amount) {
+    public void fireEvent(EventType name, String eventTime, double amount) {
         Event eventToFire = eventMap.get(name);
 
-        eventToFire.fireMouseScrollEvent(amount);
+        eventToFire.fireMouseScrollEvent(eventTime, amount);
     }
 
     public void registerEvent(EventType name, Event event) {

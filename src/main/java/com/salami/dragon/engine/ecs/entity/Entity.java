@@ -63,36 +63,48 @@ public class Entity {
         return scale;
     }
 
-    public void setScale(float scale) {
+    public Entity setScale(float scale) {
         this.scale = scale;
+
+        return this;
     }
 
     public Quaternionf getRotation() {
         return rotation;
     }
 
-    public final void setRotation(Quaternionf q) {
+    public final Entity setRotation(Quaternionf q) {
         this.rotation.set(q);
+
+        return this;
     }
 
     public Mesh getMesh() {
         return mesh;
     }
 
-    public void setMesh(Mesh mesh) {
+    public Entity setMesh(Mesh mesh) {
         this.mesh = mesh;
+
+        return this;
     }
 
-    public void addComponent(String componentName, IComponent component) {
+    public Entity addComponent(String componentName, IComponent component) {
         componentList.put(componentName, component);
+
+        return this;
     }
 
-    public void cleanUp() {
+    public Entity cleanUp() {
         clearComponents();
+
+        return this;
     }
 
-    public void removeComponent(String componentName) {
+    public Entity removeComponent(String componentName) {
         componentList.remove(componentName);
+
+        return this;
     }
 
     public IComponent getComponent(String componentName) {
@@ -103,7 +115,9 @@ public class Entity {
         return componentList.values().stream().toList();
     }
 
-    public void clearComponents() {
+    public Entity clearComponents() {
         componentList = new HashMap<>();
+
+        return this;
     }
 }

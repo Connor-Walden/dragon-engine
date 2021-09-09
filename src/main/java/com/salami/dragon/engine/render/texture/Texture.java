@@ -68,6 +68,11 @@ public class Texture {
         loadToGL();
     }
 
+    public Texture(ByteBuffer imageBuffer) throws Exception {
+        buffer = imageBuffer;
+        loadToGL();
+    }
+
     public void loadToGL() throws IOException {
         // Create a new OpenGL texture
         textureId = glGenTextures();

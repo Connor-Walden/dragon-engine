@@ -6,35 +6,17 @@ import com.salami.dragon.engine.render.Material;
 import com.salami.dragon.engine.render.mesh.Mesh;
 import com.salami.dragon.engine.render.OBJLoader;
 
-public class Bunny {
-    Entity bunnyEntity;
+public class Bunny extends Entity {
+    public Bunny(Mesh mesh) throws Exception {
+        super(mesh);
+    }
 
-    public Bunny() throws Exception {
+    public static Bunny createBunny() throws Exception {
         Material material = new Material();
 
         Mesh mesh = OBJLoader.loadMesh("/models/bunny.obj");
         mesh.setMaterial(material);
 
-        bunnyEntity = new Entity(mesh);
-    }
-
-    public Bunny setScale(float scale) {
-        bunnyEntity.setScale(scale);
-
-        return this;
-    }
-
-    public Bunny setPosition(int x, int y, int z) {
-        bunnyEntity.setPosition(x, y, z);
-
-        return this;
-    }
-
-    public Entity getBunnyEntity() {
-        return bunnyEntity;
-    }
-
-    public void addComponent(String name, IComponent component) {
-        bunnyEntity.addComponent(name, component);
+        return new Bunny(mesh);
     }
 }

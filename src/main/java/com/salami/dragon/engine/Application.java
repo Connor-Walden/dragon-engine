@@ -9,6 +9,7 @@ import com.salami.dragon.engine.ecs.component.prefab.AudioListener;
 import com.salami.dragon.engine.ecs.entity.Entity;
 import com.salami.dragon.engine.event.*;
 import com.salami.dragon.engine.event.Event;
+import com.salami.dragon.engine.input.Input;
 import com.salami.dragon.engine.log.Logger;
 import com.salami.dragon.engine.render.Fog;
 import com.salami.dragon.engine.render.RenderMode;
@@ -28,8 +29,10 @@ public class Application {
     private final Window window;
 
     private static Application instance;
-
     private final List<Entity> entities;
+
+    // used for tracking the mouse movements while player controls are suspended.
+    private static double tmpXPos, tmpYPos;
 
     World world;
     Audio audio;
@@ -47,7 +50,8 @@ public class Application {
             app.HEIGHT(),
             app.TITLE(),
             app.CAMERA(),
-            app.WINDOW_OPTIONS()
+            app.WINDOW_OPTIONS(),
+            app.IMGUI_LAYER()
         );
 
         setupEvents();
@@ -57,12 +61,28 @@ public class Application {
 
     private void setupEvents() {
         Map<EventType, Event> eventMap = new HashMap<>();
-        eventMap.put(EventType.APPLICATION_START, new Event(EventType.APPLICATION_START));
-        eventMap.put(EventType.APPLICATION_STOP, new Event(EventType.APPLICATION_STOP));
-        eventMap.put(EventType.APPLICATION_INIT, new Event(EventType.APPLICATION_INIT));
-        eventMap.put(EventType.APPLICATION_TICK, new Event(EventType.APPLICATION_TICK));
-        eventMap.put(EventType.COMPONENTS_INIT, new Event(EventType.COMPONENTS_INIT));
-        eventMap.put(EventType.COMPONENTS_TICK, new Event(EventType.COMPONENTS_TICK));
+
+        // BEFORE
+        eventMap.put(EventType.APPLICATION_START, new Event(EventType.APPLICATION_START, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.APPLICATION_STOP, new Event(EventType.APPLICATION_STOP, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.APPLICATION_INIT, new Event(EventType.APPLICATION_INIT, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.APPLICATION_TICK, new Event(EventType.APPLICATION_TICK, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.COMPONENTS_INIT, new Event(EventType.COMPONENTS_INIT, EventTime.BEFORE_EVENT));
+        eventMap.put(EventType.COMPONENTS_TICK, new Event(EventType.COMPONENTS_TICK, EventTime.BEFORE_EVENT));
+
+        // Register before events
+        this.eventGovernor.registerEvents(eventMap);
+        eventMap = new HashMap<>();
+
+        // AFTER
+        eventMap.put(EventType.APPLICATION_START, new Event(EventType.APPLICATION_START, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.APPLICATION_STOP, new Event(EventType.APPLICATION_STOP, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.APPLICATION_INIT, new Event(EventType.APPLICATION_INIT, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.APPLICATION_TICK, new Event(EventType.APPLICATION_TICK, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.COMPONENTS_INIT, new Event(EventType.COMPONENTS_INIT, EventTime.AFTER_EVENT));
+        eventMap.put(EventType.COMPONENTS_TICK, new Event(EventType.COMPONENTS_TICK, EventTime.AFTER_EVENT));
+
+        // Register after events
         this.eventGovernor.registerEvents(eventMap);
     }
 
@@ -113,9 +133,11 @@ public class Application {
     }
 
     public void start() throws Exception {
-        this.eventGovernor.fireEvent(EventType.APPLICATION_START);
+        this.eventGovernor.fireEvent(EventType.APPLICATION_START, EventTime.BEFORE_EVENT);
 
         Logger.log_highlight("Hello from Dragon game engine!");
+
+        this.eventGovernor.fireEvent(EventType.APPLICATION_START, EventTime.AFTER_EVENT);
 
         // Follow application flow by initialising and going into tick()
         init();
@@ -123,15 +145,22 @@ public class Application {
     }
 
     public static void stop() {
-        getEventGovernor().fireEvent(EventType.APPLICATION_STOP);
+        getEventGovernor().fireEvent(EventType.APPLICATION_STOP, EventTime.BEFORE_EVENT);
 
         getAudio().cleanup();
 
+        // TODO: UI CLEANUP
+
         // Destroy the window
         getWindow().invalidateWindow();
+
+        getEventGovernor().fireEvent(EventType.APPLICATION_STOP, EventTime.AFTER_EVENT);
     }
 
     public void init() throws Exception {
+        eventGovernor.fireEvent(EventType.APPLICATION_INIT, EventTime.BEFORE_EVENT);
+        eventGovernor.fireEvent(EventType.COMPONENTS_INIT, EventTime.BEFORE_EVENT);
+
         window.init();
         app.init();
 
@@ -144,8 +173,10 @@ public class Application {
 
         }
 
-        eventGovernor.fireEvent(EventType.COMPONENTS_INIT);
-        eventGovernor.fireEvent(EventType.APPLICATION_INIT);
+        // TODO: UI init
+
+        eventGovernor.fireEvent(EventType.COMPONENTS_INIT, EventTime.AFTER_EVENT);
+        eventGovernor.fireEvent(EventType.APPLICATION_INIT, EventTime.AFTER_EVENT);
     }
 
     public void tick() throws Exception {
@@ -159,8 +190,10 @@ public class Application {
             float delta = now - last;
             last = now;
 
+            eventGovernor.fireEvent(EventType.COMPONENTS_TICK, EventTime.BEFORE_EVENT);
+            eventGovernor.fireEvent(EventType.APPLICATION_TICK, EventTime.BEFORE_EVENT);
+
             app.tick(delta);
-            window.tick(delta);
 
             for(Entity entity : entities) {
                 List<IComponent> componentList = entity.getComponents();
@@ -170,10 +203,14 @@ public class Application {
                 }
             }
 
+            // TODO: UI render
+
             getWorld().getSkyBox().setPosition(app.CAMERA().getPosition().x, app.CAMERA().getPosition().y, app.CAMERA().getPosition().z);
 
-            eventGovernor.fireEvent(EventType.COMPONENTS_TICK);
-            this.eventGovernor.fireEvent(EventType.APPLICATION_TICK);
+            window.tick(delta);
+
+            eventGovernor.fireEvent(EventType.COMPONENTS_TICK, EventTime.AFTER_EVENT);
+            eventGovernor.fireEvent(EventType.APPLICATION_TICK, EventTime.AFTER_EVENT);
         }
 
         stop();
@@ -192,9 +229,13 @@ public class Application {
     public static void setCursorCaptured(boolean captured) {
         if(captured) {
             glfwSetInputMode(getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            setCursor(0, 0);
+            setCursor((float) tmpXPos, (float) tmpYPos);
         } else {
             glfwSetInputMode(getWindow().getGLFWWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+            tmpXPos = Input.getMouseX();
+            tmpYPos = Input.getMouseY();
+
             centreCursor();
         }
     }

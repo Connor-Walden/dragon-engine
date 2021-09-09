@@ -22,7 +22,7 @@ public class GraphicsContext {
     public static final int MAX_POINT_LIGHTS = 5;
     public static final int MAX_SPOT_LIGHTS = 5;
 
-    private IContext worldContext, hudContext, skyBoxContext, depthContext, particleContext;
+    private IContext worldContext, skyBoxContext, depthContext, particleContext, uiContext;
 
     private final Window window;
 
@@ -45,21 +45,21 @@ public class GraphicsContext {
 
         // Create all contexts
         worldContext = new WorldContext();
-        hudContext = new HUDContext();
         skyBoxContext = new SkyBoxContext();
         depthContext = new DepthContext();
         particleContext = new ParticleContext();
+        uiContext = new UIContext();
 
         // Setup all contexts
         depthContext.setup();
         skyBoxContext.setup();
         worldContext.setup();
-        hudContext.setup();
         particleContext.setup();
+        uiContext.setup();
     }
 
     public void clear() {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
 
     public void render(Window window, Camera camera, World world) throws Exception {
@@ -77,7 +77,7 @@ public class GraphicsContext {
         worldContext.render(world, transformation, shadowMap);
         skyBoxContext.render(world, transformation, shadowMap);
         particleContext.render(world, transformation, shadowMap);
-        // hudContext.render(world, transformation, shadowMap);
+        uiContext.render(world, transformation, shadowMap);
     }
 
     public void cleanUp() {
@@ -88,8 +88,8 @@ public class GraphicsContext {
         depthContext.cleanUp();
         skyBoxContext.cleanUp();
         worldContext.cleanUp();
-        hudContext.cleanUp();
         particleContext.cleanUp();
+        uiContext.cleanUp();
     }
 
     public void swapBuffers(Camera camera, World world) throws Exception {
